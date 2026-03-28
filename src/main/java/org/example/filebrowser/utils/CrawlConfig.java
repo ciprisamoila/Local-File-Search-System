@@ -1,5 +1,6 @@
 package org.example.filebrowser.utils;
 
+import org.example.filebrowser.utils.exceptions.ConfigException;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -11,58 +12,73 @@ import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public record CrawlConfig(String root, ReportType reportType, String[] fileTypes, double maxFileSize) {
+public record CrawlConfig(String root, ReportType reportType, String[] fileTypes, long maxFileSize) {
     private static final String configFilePath = "./crawlconfig.json";
 
     private static CrawlConfig computeDefaultConfig() {
         String root = System.getProperty("user.dir");
-        return new CrawlConfig(root, ReportType.TEXT, new String[]{".txt", ".cpp", ".c"}, 1);
+        return new CrawlConfig(root, ReportType.TEXT, new String[]{"txt", "cpp", "c"}, 1);
     }
     private static final CrawlConfig defaultConfig = computeDefaultConfig();
 
+    private static CrawlConfig readConfigFromScanner(Scanner fileReader) {
+        StringBuilder jsonString = new StringBuilder();
+        while (fileReader.hasNextLine()) {
+            String data = fileReader.nextLine();
+            jsonString.append(data);
+        }
 
-    public static CrawlConfig readConfigFromFile() {
+        // parsing json
+        JSONObject jo = new JSONObject(jsonString.toString());
+
+        String root = jo.getString("root");
+
+        ReportType reportType =
+                ReportType.valueOf(jo.getString("reportType"));
+
+        JSONArray arr = jo.getJSONArray("fileTypes");
+        String[] fileTypes = new String[arr.length()];
+        for (int i = 0; i < arr.length(); i++) {
+            fileTypes[i] = arr.getString(i);
+        }
+
+        long maxFileSize = jo.getLong("maxFileSize");
+
+        return new CrawlConfig(root, reportType, fileTypes, maxFileSize);
+    }
+
+    public static CrawlConfig readConfigFromFileNoCreation() {
         Logger logger = Logger.getLogger("utils");
 
         File configFile = new File(configFilePath);
 
         try (Scanner fileReader = new Scanner(configFile)) {
-            StringBuilder jsonString = new StringBuilder();
-            while (fileReader.hasNextLine()) {
-                String data = fileReader.nextLine();
-                jsonString.append(data);
-            }
-
-            // parsing json
-            JSONObject jo = new JSONObject(jsonString.toString());
-
-            String root = jo.getString("root");
-
-            ReportType reportType =
-                    ReportType.valueOf(jo.getString("reportType"));
-
-            JSONArray arr = jo.getJSONArray("fileTypes");
-            String[] fileTypes = new String[arr.length()];
-            for (int i = 0; i < arr.length(); i++) {
-                fileTypes[i] = arr.getString(i);
-            }
-
-            double maxFileSize = jo.getDouble("maxFileSize");
-
-            return new CrawlConfig(root, reportType, fileTypes, maxFileSize);
+            return readConfigFromScanner(fileReader);
 
         } catch (FileNotFoundException e) {
-            // if no file found, create one with default configs
-            writeConfigToFile(defaultConfig);
+            // if no file found, return default configs
+            logger.log(Level.WARNING, e.getMessage());
 
             return defaultConfig;
-        } catch (Exception e) {
-            logger.log(Level.WARNING, e.getMessage());
-            throw new RuntimeException(e);
         }
     }
 
-    public static void writeConfigToFile(CrawlConfig crawlConfig) {
+    public static CrawlConfig readConfigFromFileWithCreation() throws ConfigException {
+
+        File configFile = new File(configFilePath);
+
+        try (Scanner fileReader = new Scanner(configFile)) {
+            return readConfigFromScanner(fileReader);
+
+        } catch (FileNotFoundException e) {
+            // if no file found, return default configs
+            writeConfigToFile(defaultConfig);
+
+            return defaultConfig;
+        }
+    }
+
+    public static void writeConfigToFile(CrawlConfig crawlConfig) throws ConfigException {
         Logger logger = Logger.getLogger("utils");
 
         JSONObject jo = new JSONObject();
@@ -77,14 +93,16 @@ public record CrawlConfig(String root, ReportType reportType, String[] fileTypes
             configFile.write(jo.toString());
         } catch (IOException e) {
             logger.log(Level.WARNING, e.getMessage());
+
+            throw new ConfigException(e.getMessage());
         }
     }
 
 
 
     public static void main(String[] args) {
-        CrawlConfig cf = readConfigFromFile();
+        CrawlConfig cf = readConfigFromFileNoCreation();
 
-        writeConfigToFile(cf);
+        System.out.println(cf);
     }
 }
