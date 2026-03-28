@@ -17,7 +17,7 @@ public record CrawlConfig(String root, ReportType reportType, String[] fileTypes
 
     private static CrawlConfig computeDefaultConfig() {
         String root = System.getProperty("user.dir");
-        return new CrawlConfig(root, ReportType.TEXT, new String[]{"txt", "cpp", "c"}, 1);
+        return new CrawlConfig(root, ReportType.TEXT, new String[]{"txt", "cpp", "c"}, 100_000);
     }
     private static final CrawlConfig defaultConfig = computeDefaultConfig();
 
