@@ -10,5 +10,5 @@ public record FileAttributes(
         FileTime lastAccessedTime,
         FileTime lastModifiedTime,
         long size
-        ) {
+) {
 }

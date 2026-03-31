@@ -12,7 +12,12 @@ import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public record CrawlConfig(String root, ReportType reportType, String[] fileTypes, long maxFileSize) {
+public record CrawlConfig(
+        String root,
+        ReportType reportType,
+        String[] fileTypes,
+        long maxFileSize
+) {
     private static final String configFilePath = "./crawlconfig.json";
 
     private static CrawlConfig computeDefaultConfig() {
