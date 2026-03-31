@@ -7,7 +7,8 @@ public class FileCrawlerManager implements Crawling {
         CrawlConfig config = CrawlConfig.readConfigFromFileNoCreation();
 
         FileCrawler fileCrawler = new FileCrawler(config);
-        fileCrawler.run();
+        Thread t = new Thread(fileCrawler);
+        t.start();
     }
 
     public static void main(String[] args) {
