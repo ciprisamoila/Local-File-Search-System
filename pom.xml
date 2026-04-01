@@ -46,6 +46,13 @@
             <version>20251224</version>
             <scope>compile</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>42.7.10</version>
+        </dependency>
+
     </dependencies>
 
     <build>
