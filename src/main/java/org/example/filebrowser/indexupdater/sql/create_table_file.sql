@@ -7,9 +7,9 @@ create table file (
     file_last_modified_time TIMESTAMP not null,
     size BIGINT not null,
 
-    -- not_read_access BOOLEAN not null,
-    checksum BIGINT not null,
-    content TEXT not null,
+    read_access BOOLEAN not null,
+    checksum CHAR(64),
+    content TEXT,
 
     last_scan_id BIGINT not null,
 

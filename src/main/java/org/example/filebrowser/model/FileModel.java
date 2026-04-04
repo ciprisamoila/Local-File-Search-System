@@ -2,8 +2,9 @@ package org.example.filebrowser.model;
 
 public record FileModel(
         FileAttributes fileAttributes,
-        long checksumValue,
+        String checksumValue,
         String content,
-        long lastScanId
+        long lastScanId,
+        boolean readAccess
 ) {
 }
