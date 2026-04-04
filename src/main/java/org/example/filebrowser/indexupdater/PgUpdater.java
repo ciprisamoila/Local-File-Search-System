@@ -75,7 +75,7 @@ public class PgUpdater implements IUpdater{
     public UpdateValidationData searchByPath(String path) throws IndexUpdaterException {
         try {
             PreparedStatement st = conn.prepareStatement(
-                    "SELECT file_last_modified_time, checksum FROM file WHERE path = ?"
+                    "SELECT id, file_last_modified_time, checksum, read_access FROM file WHERE path = ?"
             );
 
             st.setString(1, path);
@@ -83,8 +83,10 @@ public class PgUpdater implements IUpdater{
             ResultSet rs = st.executeQuery();
             if (rs.next()) {
                 return new UpdateValidationData(
+                        rs.getLong("id"),
                         FileTime.fromMillis(rs.getTimestamp("file_last_modified_time").getTime()),
-                        rs.getLong("checksum")
+                        rs.getString("checksum"),
+                        rs.getBoolean("read_access")
                 );
             } else {
                 return null;
@@ -105,10 +107,11 @@ public class PgUpdater implements IUpdater{
                             "file_creation_time, " +
                             "file_last_modified_time, " +
                             "size, " +
+                            "read_access," +
                             "checksum, " +
                             "content, " +
                             "last_scan_id" +
-                            ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                            ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
             );
 
             st.setString(1, fileModel.fileAttributes().name());
@@ -117,9 +120,10 @@ public class PgUpdater implements IUpdater{
             st.setTimestamp(4, new Timestamp(fileModel.fileAttributes().creationTime().toMillis()));
             st.setTimestamp(5, new Timestamp(fileModel.fileAttributes().lastModifiedTime().toMillis()));
             st.setLong(6, fileModel.fileAttributes().size());
-            st.setLong(7, fileModel.checksumValue());
-            st.setString(8, fileModel.content());
-            st.setLong(9, fileModel.lastScanId());
+            st.setBoolean(7, fileModel.readAccess());
+            st.setString(8, fileModel.checksumValue());
+            st.setString(9, fileModel.content());
+            st.setLong(10, fileModel.lastScanId());
 
             st.executeUpdate();
 
@@ -132,28 +136,94 @@ public class PgUpdater implements IUpdater{
     }
 
     @Override
-    public void updateLastModifiedTime(FileTime lastModifiedTime) {
+    public void updateLastModifiedTime(long fileId, FileTime lastModifiedTime) throws IndexUpdaterException {
+        try {
+            PreparedStatement st = conn.prepareStatement(
+                    "UPDATE file " +
+                            "SET file_last_modified_time = ?, updated_at = DEFAULT " +
+                            "WHERE id = ?"
+            );
 
+            st.setTimestamp(1, new Timestamp(lastModifiedTime.toMillis()));
+            st.setLong(2, fileId);
+
+            st.executeUpdate();
+
+            st.close();
+        } catch (SQLException e) {
+            logger.log(Level.WARNING, "Update time failed!\n" + e.getMessage());
+            throw new IndexUpdaterException(e.getMessage());
+        }
     }
 
     @Override
-    public void updateFile(FileModel fileModel) {
+    public void updateFile(long fileId, FileModel fileModel) throws IndexUpdaterException {
+        try {
+            PreparedStatement st = conn.prepareStatement(
+                    "UPDATE file " +
+                            "SET file_creation_time = ?, " +
+                                "file_last_modified_time = ?, " +
+                                "size = ?, " +
+                                "read_access = ?, " +
+                                "checksum = ?, " +
+                                "content = ?, " +
+                                "last_scan_id = ?, " +
+                                "updated_at = DEFAULT " +
+                            "WHERE id = ?"
+            );
 
+            st.setTimestamp(1, new Timestamp(fileModel.fileAttributes().lastModifiedTime().toMillis()));
+            st.setTimestamp(2, new Timestamp(fileModel.fileAttributes().lastModifiedTime().toMillis()));
+            st.setLong(3, fileModel.fileAttributes().size());
+            st.setBoolean(4, fileModel.readAccess());
+            st.setString(5, fileModel.checksumValue());
+            st.setString(6, fileModel.content());
+            st.setLong(7, fileModel.lastScanId());
+            st.setLong(8, fileId);
+
+            st.executeUpdate();
+
+            st.close();
+        } catch (SQLException e) {
+            logger.log(Level.WARNING, "Update file failed!\n" + e.getMessage());
+            throw new IndexUpdaterException(e.getMessage());
+        }
     }
 
     @Override
-    public void updateLastScanId(long scanId) {
+    public void updateLastScanId(long fileId, long scanId) throws IndexUpdaterException {
+        try {
+            PreparedStatement st = conn.prepareStatement(
+                    "UPDATE file " +
+                            "SET last_scan_id = ?, updated_at = DEFAULT " +
+                            "WHERE id = ?"
+            );
 
+            st.setLong(1, scanId);
+            st.setLong(2, fileId);
+
+            st.executeUpdate();
+
+            st.close();
+        } catch (SQLException e) {
+            logger.log(Level.WARNING, "Update scanId failed!\n" + e.getMessage());
+            throw new IndexUpdaterException(e.getMessage());
+        }
     }
 
     @Override
-    public void removeUnscanned(long scanId) {
+    public void removeUnscanned(long scanId) throws IndexUpdaterException {
+        try {
+            PreparedStatement st = conn.prepareStatement(
+                    "DELETE FROM file WHERE last_scan_id <> ?"
+            );
 
-    }
+            st.setLong(1, scanId);
 
-    public static void main(String[] args) throws IndexUpdaterException {
-        PgUpdater u = new PgUpdater();
-
-        System.out.println(u.searchByPath("aaa"));
+            st.executeUpdate();
+        } catch(SQLException e) {
+            logger.log(Level.WARNING, "Remove unscanned failed!\n" + e.getMessage());
+            throw new IndexUpdaterException(e.getMessage());
+        }
     }
 }
