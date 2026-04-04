@@ -9,8 +9,8 @@ import java.nio.file.attribute.FileTime;
 public interface IUpdater {
     UpdateValidationData searchByPath(String path) throws IndexUpdaterException;
     void insert(FileModel fileModel) throws IndexUpdaterException;
-    void updateLastModifiedTime(FileTime lastModifiedTime);
-    void updateFile(FileModel fileModel);
-    void updateLastScanId(long scanId);
-    void removeUnscanned(long scanId);
+    void updateLastModifiedTime(long fileId, FileTime lastModifiedTime) throws IndexUpdaterException;
+    void updateFile(long fileId, FileModel fileModel) throws IndexUpdaterException;
+    void updateLastScanId(long fileId, long scanId) throws IndexUpdaterException;
+    void removeUnscanned(long scanId) throws IndexUpdaterException;
 }
