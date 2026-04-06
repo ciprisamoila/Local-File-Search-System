@@ -1,8 +1,11 @@
 package org.example.filebrowser.querymanager;
 
 import org.example.filebrowser.model.QueryFileModel;
+import org.example.filebrowser.utils.PgUtils;
 import org.example.filebrowser.utils.exceptions.QueryManagerException;
+import org.json.JSONException;
 
+import java.io.FileNotFoundException;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -18,13 +21,9 @@ public class PgQuerier implements IQuerier {
     public PgQuerier() throws QueryManagerException {
         String url = "jdbc:postgresql://localhost:5432/filebrowser";
 
-        //TODO
-        // trebuie sa citesc datele sensibile dintr-un fisier
-        Properties props = new Properties();
-        props.setProperty("user", "postgres");
-        props.setProperty("password", "postgres");
-
         try {
+            Properties props = PgUtils.getCredentialsFromFile("./credentials.json");
+
             conn = DriverManager.getConnection(url, props);
 
             // checking if table FILE exists
@@ -35,7 +34,7 @@ public class PgQuerier implements IQuerier {
                 // the table does not exist
                 throw new SQLException("The table does not exist");
             }
-        } catch (SQLException e) {
+        } catch (SQLException | FileNotFoundException | JSONException e) {
             logger.log(Level.SEVERE, e.getMessage());
             throw new QueryManagerException(e.getMessage());
         }

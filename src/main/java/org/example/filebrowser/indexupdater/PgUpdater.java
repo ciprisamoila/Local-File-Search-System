@@ -2,12 +2,16 @@ package org.example.filebrowser.indexupdater;
 
 import org.example.filebrowser.model.FileModel;
 import org.example.filebrowser.model.UpdateValidationData;
+import org.example.filebrowser.utils.PgUtils;
 import org.example.filebrowser.utils.exceptions.IndexUpdaterException;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.*;
 import java.nio.file.attribute.FileTime;
 import java.sql.*;
 import java.util.Properties;
+import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -15,10 +19,10 @@ public class PgUpdater implements IUpdater{
     private final Logger logger = Logger.getLogger("indexupdater");
     private final Connection conn;
 
-    private void executeFromFile(String filename) throws SQLException {
+    private void executeFromFile() throws SQLException {
         try {
             Statement st = conn.createStatement();
-            BufferedReader br = new BufferedReader(new FileReader(filename));
+            BufferedReader br = new BufferedReader(new FileReader("src/main/java/org/example/filebrowser/indexupdater/sql/create_table_file.sql"));
 
             StringBuilder query = new StringBuilder();
             String line;
@@ -43,12 +47,9 @@ public class PgUpdater implements IUpdater{
     public PgUpdater() throws IndexUpdaterException {
         String url = "jdbc:postgresql://localhost:5432/filebrowser";
 
-        // trebuie sa citesc datele sensibile dintr-un fisier
-        Properties props = new Properties();
-        props.setProperty("user", "postgres");
-        props.setProperty("password", "postgres");
-
         try {
+            Properties props = PgUtils.getCredentialsFromFile("./credentials.json");
+
             conn = DriverManager.getConnection(url, props);
 
             // checking if table FILE exists
@@ -57,9 +58,9 @@ public class PgUpdater implements IUpdater{
 
             if (!rs.first()) {
                 // the table does not exist, we create it
-                executeFromFile("src/main/java/org/example/filebrowser/indexupdater/sql/create_table_file.sql");
+                executeFromFile();
             }
-        } catch (SQLException e) {
+        } catch (SQLException | FileNotFoundException | JSONException e) {
             logger.log(Level.SEVERE, e.getMessage());
             throw new IndexUpdaterException(e.getMessage());
         }
@@ -92,6 +93,7 @@ public class PgUpdater implements IUpdater{
                 return null;
             }
         } catch (SQLException e) {
+            logger.log(Level.WARNING, "Search failed!\n" + e.getMessage());
             throw new IndexUpdaterException(e.getMessage());
         }
     }
