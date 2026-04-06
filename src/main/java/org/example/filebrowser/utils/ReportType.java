@@ -1,5 +1,5 @@
 package org.example.filebrowser.utils;
 
 public enum ReportType {
-    TEXT, PDF
+    TEXT, CONSOLE, JSON
 }
