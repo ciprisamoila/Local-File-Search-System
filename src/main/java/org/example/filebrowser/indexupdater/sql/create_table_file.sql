@@ -14,6 +14,13 @@ create table file (
     last_scan_id BIGINT not null,
 
     created_at TIMESTAMP DEFAULT current_timestamp,
-    -- https://www.morling.dev/blog/last-updated-columns-with-postgres/
     updated_at TIMESTAMP DEFAULT current_timestamp
 );
+
+alter table file add column ts tsvector
+    generated always as (
+        setweight(to_tsvector('english', coalesce(name, '')), 'A') ||
+        setweight(to_tsvector('english', coalesce(content, '')), 'B')
+        ) stored;
+
+create index ts_idx on file using gin (ts);
