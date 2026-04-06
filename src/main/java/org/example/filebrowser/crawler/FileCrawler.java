@@ -71,31 +71,22 @@ public class FileCrawler implements Runnable {
                     FileAttributes fileAttributes = fileInspector.getFileAttributes(file);
 
                     if (fileInspector.verifiesConfig(fileAttributes, config)) {
-                        UpdateValidationData validationData;
-                        if ((validationData = filePersistor.searchByPath(file.getAbsolutePath())) == null) {
-                            FileModel fileModel = fileInspector.getFileModel(file, fileAttributes, scanId);
+                        UpdateValidationData validationData = filePersistor.searchByPath(file.getAbsolutePath());
+                        FileModel fileModel = fileInspector.getFileModel(file, fileAttributes, scanId);
+
+                        if (validationData == null) {
                             System.out.println("Insert file");
                             nrFilesToInsert++;
                             insert(fileModel);
-                        } else if (fileChecker.modifiedTimeHasBeenModified(validationData.lastModifiedTime(), fileAttributes.lastModifiedTime())) {
-                            FileModel fileModel = fileInspector.getFileModel(file, fileAttributes, scanId);
+                        } else {
                             if (fileChecker.checksumHasBeenModified(validationData.checksumValue(), fileModel.checksumValue())) {
                                 System.out.println("Update file");
                                 nrFilesToUpdate++;
                                 updateFile(validationData.id(), fileModel);
                             } else {
-                                System.out.println("Update just date and scanId");
-                                filePersistor.updateLastModifiedTime(validationData.id(), fileAttributes.lastModifiedTime());
+                                System.out.println("Update just scanId");
                                 filePersistor.updateLastScanId(validationData.id(), scanId);
                             }
-                        } else if (fileChecker.readingRightsHaveBeenModified(validationData.readAccess(), fileInspector.canRead(file))) {
-                            FileModel fileModel = fileInspector.getFileModel(file, fileAttributes, scanId);
-                            System.out.println("reading rights changed!!!");
-                            nrFilesToUpdate++;
-                            updateFile(validationData.id(), fileModel);
-                        } else {
-                            System.out.println("Update just scanId");
-                            filePersistor.updateLastScanId(validationData.id(), scanId);
                         }
                     }
                 }

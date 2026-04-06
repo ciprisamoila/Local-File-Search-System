@@ -4,15 +4,16 @@ import java.nio.file.attribute.FileTime;
 
 public class FileChecker {
 
-    public boolean modifiedTimeHasBeenModified(FileTime lastRecordedModifiedTime, FileTime realModifiedTime) {
-        return lastRecordedModifiedTime.toMillis() < realModifiedTime.toMillis();
-    }
-
     public boolean checksumHasBeenModified(String lastRecordedChecksum, String realChecksum) {
-        return !lastRecordedChecksum.equals(realChecksum);
-    }
+        // the file still has not read access
+        if (lastRecordedChecksum == null && realChecksum == null)
+            return false;
 
-    public boolean readingRightsHaveBeenModified(boolean hadRightsToRead, boolean haveRightsToRead) {
-        return hadRightsToRead != haveRightsToRead;
+        // the file has read access and had before; we check for change in checksum
+        if (lastRecordedChecksum != null && realChecksum != null)
+            return !lastRecordedChecksum.equals(realChecksum);
+
+        // file changed its access rights
+        return true;
     }
 }
