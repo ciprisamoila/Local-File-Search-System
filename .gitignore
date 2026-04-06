@@ -40,3 +40,5 @@ build/
 ### filebrowser ###
 crawlconfig.json
 TODO.md
+credentials.json
+report.*
