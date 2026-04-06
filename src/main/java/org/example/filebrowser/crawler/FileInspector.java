@@ -1,5 +1,6 @@
 package org.example.filebrowser.crawler;
 
+import org.apache.tika.Tika;
 import org.example.filebrowser.model.FileAttributes;
 import org.example.filebrowser.model.FileModel;
 import org.example.filebrowser.utils.CrawlConfig;
@@ -66,17 +67,16 @@ public class FileInspector {
     }
 
     public boolean isTextFile(File file) throws CrawlerException {
-        Path path = file.toPath();
-
-        String mimeType;
+        Tika tika = new Tika();
+        String type;
         try {
-            mimeType = Files.probeContentType(path);
+            type = tika.detect(file);
         } catch (IOException e) {
             logger.log(Level.WARNING, e.getMessage());
             throw new CrawlerException(e.getMessage());
         }
 
-        return mimeType != null && mimeType.startsWith("text");
+        return type.startsWith("text");
     }
 
     public boolean verifiesConfig(FileAttributes attr, CrawlConfig config) {

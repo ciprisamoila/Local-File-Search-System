@@ -4,6 +4,7 @@ module org.example.filebrowser {
     requires java.logging;
     requires org.json;
     requires java.sql;
+    requires org.apache.tika.core;
 
 
     opens org.example.filebrowser to javafx.fxml;
