@@ -4,6 +4,8 @@
       <w>crawlconfig</w>
       <w>filebrowser</w>
       <w>indexupdater</w>
+      <w>querier</w>
+      <w>querymanager</w>
     </words>
   </dictionary>
 </component>
