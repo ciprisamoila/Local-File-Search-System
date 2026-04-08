@@ -18,6 +18,7 @@ public record CrawlConfig(
         String[] fileTypes,
         long maxFileSize
 ) {
+    private static final long MAX_ACCEPTED_FILE_SIZE = 1_000_000_000;
     private static final String configFilePath = "./crawlconfig.json";
 
     private static CrawlConfig computeDefaultConfig() {
@@ -49,7 +50,7 @@ public record CrawlConfig(
 
         long maxFileSize = jo.getLong("maxFileSize");
 
-        return new CrawlConfig(root, reportType, fileTypes, maxFileSize);
+        return new CrawlConfig(root, reportType, fileTypes, Math.min(maxFileSize, MAX_ACCEPTED_FILE_SIZE));
     }
 
     public static CrawlConfig readConfigFromFileNoCreation() {
