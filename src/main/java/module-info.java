@@ -8,5 +8,6 @@ module org.example.filebrowser {
 
 
     opens org.example.filebrowser to javafx.fxml;
+    opens org.example.filebrowser.ui to javafx.fxml;
     exports org.example.filebrowser;
 }
