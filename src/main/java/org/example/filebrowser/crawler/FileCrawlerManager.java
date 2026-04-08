@@ -1,15 +1,25 @@
 package org.example.filebrowser.crawler;
 
+import org.example.filebrowser.crawler.report.ConsoleReport;
+import org.example.filebrowser.crawler.report.IReport;
+import org.example.filebrowser.crawler.report.JsonReport;
+import org.example.filebrowser.crawler.report.TextReport;
 import org.example.filebrowser.utils.CrawlConfig;
+import org.example.filebrowser.utils.exceptions.ConfigException;
 import org.example.filebrowser.utils.exceptions.IndexUpdaterException;
 
 public class FileCrawlerManager implements Crawling {
     public void crawl() throws IndexUpdaterException {
         CrawlConfig config = CrawlConfig.readConfigFromFileNoCreation();
 
-        FileCrawler fileCrawler = new FileCrawler(config);
-        Thread t = new Thread(fileCrawler);
-        t.start();
+        IReport reporter = switch (config.reportType()) {
+            case TEXT -> new TextReport();
+            case CONSOLE -> new ConsoleReport();
+            case JSON -> new JsonReport();
+        };
+
+        FileCrawler fileCrawler = new FileCrawler(config, reporter);
+        fileCrawler.run();
     }
 
     public static void main(String[] args) {
@@ -17,7 +27,6 @@ public class FileCrawlerManager implements Crawling {
         try {
             fileCrawlerManager.crawl();
         } catch (IndexUpdaterException e) {
-            //TODO handle exception
             throw new RuntimeException(e);
         }
     }

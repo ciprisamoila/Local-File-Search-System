@@ -13,7 +13,7 @@ import org.example.filebrowser.utils.exceptions.IndexUpdaterException;
 
 import java.io.File;
 
-public class FileCrawler implements Runnable {
+public class FileCrawler {
     private final CrawlConfig config;
     private final FileInspector fileInspector;
     private final FileChecker fileChecker;
@@ -111,7 +111,7 @@ public class FileCrawler implements Runnable {
 
         this.reporter = reporter;
     }
-    @Override
+
     public void run() {
         try {
             initTraversal();
