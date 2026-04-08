@@ -1,7 +1,5 @@
 package org.example.filebrowser.crawler;
 
-import java.nio.file.attribute.FileTime;
-
 public class FileChecker {
 
     public boolean checksumHasBeenModified(String lastRecordedChecksum, String realChecksum) {

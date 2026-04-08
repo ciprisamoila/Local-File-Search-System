@@ -32,7 +32,7 @@ public class HelloApplication extends Application {
 
         stage.setTitle("File Browser Search");
         stage.setScene(scene);
-        stage.setOnCloseRequest(event -> controller.shutdown());
+        stage.setOnCloseRequest(_ -> controller.shutdown());
         stage.show();
     }
 

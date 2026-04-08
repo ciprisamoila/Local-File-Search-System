@@ -5,7 +5,6 @@ import org.example.filebrowser.crawler.report.IReport;
 import org.example.filebrowser.crawler.report.JsonReport;
 import org.example.filebrowser.crawler.report.TextReport;
 import org.example.filebrowser.utils.CrawlConfig;
-import org.example.filebrowser.utils.exceptions.ConfigException;
 import org.example.filebrowser.utils.exceptions.IndexUpdaterException;
 
 public class FileCrawlerManager implements Crawling {

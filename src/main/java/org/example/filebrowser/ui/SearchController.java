@@ -28,6 +28,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 public class SearchController {
     private static final int MAX_RESULTS = 100;
@@ -91,10 +92,10 @@ public class SearchController {
         searchButton.setDisable(true);
         crawlButton.setDisable(true);
         resultsList.setPlaceholder(new Label("No results yet."));
-        resultsList.setCellFactory(list -> new QueryResultCell());
-        queryInput.setOnAction(event -> onSearchClicked());
-        queryInput.textProperty().addListener((obs, oldValue, newValue) -> scheduleLiveSearch());
-        liveSearchDelay.setOnFinished(event -> executeSearch(false));
+        resultsList.setCellFactory(_ -> new QueryResultCell());
+        queryInput.setOnAction(_ -> onSearchClicked());
+        queryInput.textProperty().addListener((_, _, _) -> scheduleLiveSearch());
+        liveSearchDelay.setOnFinished(_ -> executeSearch(false));
         statusLabel.setText("Connecting to database...");
 
         try {
@@ -155,12 +156,12 @@ public class SearchController {
             }
         };
 
-        crawlTask.setOnSucceeded(event -> {
+        crawlTask.setOnSucceeded(_ -> {
             crawlStatusLabel.setText("Crawl finished with the current configuration.");
             crawlButton.setDisable(false);
         });
 
-        crawlTask.setOnFailed(event -> {
+        crawlTask.setOnFailed(_ -> {
             Throwable ex = crawlTask.getException();
             String errorMessage = ex == null ? "Unknown error." : ex.getMessage();
             crawlStatusLabel.setText("Crawl failed: " + errorMessage);
@@ -230,8 +231,7 @@ public class SearchController {
     }
 
     private static String[] parseFileTypes(String fileTypesText) {
-        return List.of(fileTypesText.split("[,\\n]"))
-                .stream()
+        return Stream.of(fileTypesText.split("[,\\n]"))
                 .map(String::trim)
                 .filter(token -> !token.isEmpty())
                 .toArray(String[]::new);
@@ -266,7 +266,7 @@ public class SearchController {
             }
         };
 
-        task.setOnSucceeded(event -> {
+        task.setOnSucceeded(_ -> {
             if (requestId != searchRequestId) {
                 return;
             }
@@ -277,7 +277,7 @@ public class SearchController {
             searchButton.setDisable(false);
         });
 
-        task.setOnFailed(event -> {
+        task.setOnFailed(_ -> {
             if (requestId != searchRequestId) {
                 return;
             }

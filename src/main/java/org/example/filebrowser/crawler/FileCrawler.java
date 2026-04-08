@@ -20,7 +20,7 @@ public class FileCrawler {
     private final IUpdater filePersistor;
     private final long scanId;
 
-    private IReport reporter;
+    private final IReport reporter;
     private int nrSymlinks = 0;
     private int nrDirectoriesEntered = 0;
     private int nrFilesToInsert = 0;

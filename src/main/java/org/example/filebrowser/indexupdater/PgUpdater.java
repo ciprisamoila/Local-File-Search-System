@@ -5,13 +5,11 @@ import org.example.filebrowser.model.UpdateValidationData;
 import org.example.filebrowser.utils.PgUtils;
 import org.example.filebrowser.utils.exceptions.IndexUpdaterException;
 import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.io.*;
 import java.nio.file.attribute.FileTime;
 import java.sql.*;
 import java.util.Properties;
-import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -133,27 +131,6 @@ public class PgUpdater implements IUpdater{
 
         } catch (SQLException e) {
             logger.log(Level.WARNING, "Insertion failed!\n" + e.getMessage());
-            throw new IndexUpdaterException(e.getMessage());
-        }
-    }
-
-    @Override
-    public void updateLastModifiedTime(long fileId, FileTime lastModifiedTime) throws IndexUpdaterException {
-        try {
-            PreparedStatement st = conn.prepareStatement(
-                    "UPDATE file " +
-                            "SET file_last_modified_time = ?, updated_at = DEFAULT " +
-                            "WHERE id = ?"
-            );
-
-            st.setTimestamp(1, new Timestamp(lastModifiedTime.toMillis()));
-            st.setLong(2, fileId);
-
-            st.executeUpdate();
-
-            st.close();
-        } catch (SQLException e) {
-            logger.log(Level.WARNING, "Update time failed!\n" + e.getMessage());
             throw new IndexUpdaterException(e.getMessage());
         }
     }

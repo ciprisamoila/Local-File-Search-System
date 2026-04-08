@@ -112,14 +112,6 @@ public class FileInspector {
         return hexString.toString();
     }
 
-    public boolean canRead(File file) {
-        try (FileReader _ = new FileReader(file)){
-            return true;
-        } catch (IOException e) {
-            return false;
-        }
-    }
-
     public FileModel getFileModel(File file, FileAttributes fileAttributes, long scanId) throws CrawlerException {
         try {
             BufferedReader br = new BufferedReader(new FileReader(file));

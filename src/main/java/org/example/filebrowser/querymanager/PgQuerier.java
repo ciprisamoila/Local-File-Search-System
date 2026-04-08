@@ -51,6 +51,7 @@ public class PgQuerier implements IQuerier {
     @Override
     public List<QueryFileModel> getNextFilesMatching(int nrFiles, int offset, String query) throws QueryManagerException {
         try {
+            // 4 divides the rank by the mean harmonic distance between extents (this is implemented only by ts_rank_cd)
             PreparedStatement st = conn.prepareStatement(
                     """
                             with query as (

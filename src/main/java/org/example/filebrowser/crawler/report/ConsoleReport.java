@@ -1,10 +1,6 @@
 package org.example.filebrowser.crawler.report;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 public class ConsoleReport implements IReport {
-    Logger logger = Logger.getLogger("report");
 
     @Override
     public void makeReport(ReportData reportData) {
