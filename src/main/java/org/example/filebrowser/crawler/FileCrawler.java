@@ -102,12 +102,12 @@ public class FileCrawler {
         filePersistor.removeUnscanned(scanId);
     }
 
-    public FileCrawler(CrawlConfig config, IReport reporter) throws IndexUpdaterException {
+    public FileCrawler(CrawlConfig config, IReport reporter, IUpdater filePersistor) throws IndexUpdaterException {
         this.config = config;
         this.scanId = System.currentTimeMillis();
         this.fileInspector = new FileInspector();
         this.fileChecker = new FileChecker();
-        this.filePersistor = new PgUpdater();
+        this.filePersistor = filePersistor;
 
         this.reporter = reporter;
     }
