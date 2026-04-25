@@ -9,6 +9,7 @@ import org.example.filebrowser.crawler.FileCrawlerManager;
 import org.example.filebrowser.ui.SearchController;
 import org.example.filebrowser.querymanager.PgQuerier;
 import org.example.filebrowser.utils.exceptions.QueryManagerException;
+import org.example.filebrowser.utils.exceptions.TableDoesNotExist;
 
 import java.io.IOException;
 
@@ -25,7 +26,12 @@ public class HelloApplication extends Application {
         controller.setCrawler(crawler);
 
         try {
-            controller.setQuerier(new PgQuerier());
+            try {
+                controller.setQuerier(new PgQuerier());
+            } catch (TableDoesNotExist e) {
+                controller.runStartCrawl();
+                controller.setQuerier(new PgQuerier());
+            }
         } catch (QueryManagerException e) {
             controller.setInitializationError("Database connection failed: " + e.getMessage());
         }

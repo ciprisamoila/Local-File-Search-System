@@ -3,6 +3,7 @@ package org.example.filebrowser.querymanager;
 import org.example.filebrowser.model.QueryFileModel;
 import org.example.filebrowser.utils.PgUtils;
 import org.example.filebrowser.utils.exceptions.QueryManagerException;
+import org.example.filebrowser.utils.exceptions.TableDoesNotExist;
 import org.json.JSONException;
 
 import java.io.FileNotFoundException;
@@ -32,7 +33,7 @@ public class PgQuerier implements IQuerier {
 
             if (!rs.first()) {
                 // the table does not exist
-                throw new SQLException("The table does not exist");
+                throw new TableDoesNotExist("The table does not exist");
             }
         } catch (SQLException | FileNotFoundException | JSONException e) {
             logger.log(Level.SEVERE, e.getMessage());

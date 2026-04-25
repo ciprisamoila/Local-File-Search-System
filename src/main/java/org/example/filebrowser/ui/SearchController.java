@@ -20,6 +20,7 @@ import org.example.filebrowser.querymanager.IQuerier;
 import org.example.filebrowser.utils.CrawlConfig;
 import org.example.filebrowser.utils.ReportType;
 import org.example.filebrowser.utils.exceptions.ConfigException;
+import org.example.filebrowser.utils.exceptions.IndexUpdaterException;
 import org.example.filebrowser.utils.exceptions.QueryManagerException;
 
 import java.util.List;
@@ -84,6 +85,7 @@ public class SearchController {
     private Future<?> runningCrawl;
     private int searchRequestId;
     private boolean crawlConfigLoaded;
+    private CrawlConfig initialConfig;
 
     @FXML
     private void initialize() {
@@ -115,6 +117,19 @@ public class SearchController {
     public void setCrawler(Crawling crawler) {
         this.crawler = crawler;
         updateCrawlButtonState();
+    }
+
+    public void runStartCrawl() {
+        crawlButton.setDisable(true);
+
+        try {
+            crawler.crawl();
+            crawlStatusLabel.setText("Crawl finished with the current configuration.");
+            crawlButton.setDisable(false);
+        } catch (IndexUpdaterException e) {
+            crawlStatusLabel.setText("Crawl failed: " + e.getMessage());
+            crawlButton.setDisable(false);
+        }
     }
 
     public void setInitializationError(String message) {
@@ -176,8 +191,8 @@ public class SearchController {
     }
 
     private void loadCurrentCrawlConfig() throws ConfigException {
-        CrawlConfig config = CrawlConfig.readConfigFromFileWithCreation();
-        applyConfigToForm(config);
+        initialConfig = CrawlConfig.readConfigFromFileWithCreation();
+        applyConfigToForm(initialConfig);
         crawlConfigLoaded = true;
         crawlStatusLabel.setText("Crawl configuration loaded.");
         updateCrawlButtonState();
