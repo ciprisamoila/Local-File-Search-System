@@ -58,7 +58,7 @@ public class FileInspector {
         return new FileAttributes(
                 fileName,
                 extension,
-                file.getAbsolutePath(),
+                file.getAbsolutePath().replace('\\', '/'), // all paths UNIX-like
                 attr.creationTime(),
                 attr.lastAccessTime(),
                 attr.lastModifiedTime(),

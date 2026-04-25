@@ -71,7 +71,7 @@ public class FileCrawler {
                     FileAttributes fileAttributes = fileInspector.getFileAttributes(file);
 
                     if (fileInspector.verifiesConfig(fileAttributes, config)) {
-                        UpdateValidationData validationData = filePersistor.searchByPath(file.getAbsolutePath());
+                        UpdateValidationData validationData = filePersistor.searchByPath(file.getAbsolutePath().replace('\\', '/'));
                         FileModel fileModel = fileInspector.getFileModel(file, fileAttributes, scanId);
 
                         if (validationData == null) {
