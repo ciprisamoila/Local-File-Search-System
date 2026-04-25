@@ -106,12 +106,13 @@ public class PgUpdater implements IUpdater{
                             "path, " +
                             "file_creation_time, " +
                             "file_last_modified_time, " +
+                            "file_last_accessed_time, " +
                             "size, " +
                             "read_access," +
                             "checksum, " +
                             "content, " +
                             "last_scan_id" +
-                            ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                            ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
             );
 
             st.setString(1, fileModel.fileAttributes().name());
@@ -119,11 +120,12 @@ public class PgUpdater implements IUpdater{
             st.setString(3, fileModel.fileAttributes().path());
             st.setTimestamp(4, new Timestamp(fileModel.fileAttributes().creationTime().toMillis()));
             st.setTimestamp(5, new Timestamp(fileModel.fileAttributes().lastModifiedTime().toMillis()));
-            st.setLong(6, fileModel.fileAttributes().size());
-            st.setBoolean(7, fileModel.readAccess());
-            st.setString(8, fileModel.checksumValue());
-            st.setString(9, fileModel.content());
-            st.setLong(10, fileModel.lastScanId());
+            st.setTimestamp(6, new Timestamp(fileModel.fileAttributes().lastAccessedTime().toMillis()));
+            st.setLong(7, fileModel.fileAttributes().size());
+            st.setBoolean(8, fileModel.readAccess());
+            st.setString(9, fileModel.checksumValue());
+            st.setString(10, fileModel.content());
+            st.setLong(11, fileModel.lastScanId());
 
             st.executeUpdate();
 
@@ -142,6 +144,7 @@ public class PgUpdater implements IUpdater{
                     "UPDATE file " +
                             "SET file_creation_time = ?, " +
                                 "file_last_modified_time = ?, " +
+                                "file_last_accessed_time = ?, " +
                                 "size = ?, " +
                                 "read_access = ?, " +
                                 "checksum = ?, " +
@@ -153,12 +156,13 @@ public class PgUpdater implements IUpdater{
 
             st.setTimestamp(1, new Timestamp(fileModel.fileAttributes().lastModifiedTime().toMillis()));
             st.setTimestamp(2, new Timestamp(fileModel.fileAttributes().lastModifiedTime().toMillis()));
-            st.setLong(3, fileModel.fileAttributes().size());
-            st.setBoolean(4, fileModel.readAccess());
-            st.setString(5, fileModel.checksumValue());
-            st.setString(6, fileModel.content());
-            st.setLong(7, fileModel.lastScanId());
-            st.setLong(8, fileId);
+            st.setTimestamp(3, new Timestamp(fileModel.fileAttributes().lastAccessedTime().toMillis()));
+            st.setLong(4, fileModel.fileAttributes().size());
+            st.setBoolean(5, fileModel.readAccess());
+            st.setString(6, fileModel.checksumValue());
+            st.setString(7, fileModel.content());
+            st.setLong(8, fileModel.lastScanId());
+            st.setLong(9, fileId);
 
             st.executeUpdate();
 

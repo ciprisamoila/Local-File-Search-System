@@ -67,9 +67,9 @@ public class FileCrawler {
             if (file.isDirectory()) {
                 recursiveTraversal(file);
             } else if (!file.isDirectory()) {
+                // last accessed time must remain unchanged by content detection
+                FileAttributes fileAttributes = fileInspector.getFileAttributes(file);
                 if (fileInspector.isTextFile(file)) {
-                    FileAttributes fileAttributes = fileInspector.getFileAttributes(file);
-
                     if (fileInspector.verifiesConfig(fileAttributes, config)) {
                         UpdateValidationData validationData = filePersistor.searchByPath(file.getAbsolutePath().replace('\\', '/'));
                         FileModel fileModel = fileInspector.getFileModel(file, fileAttributes, scanId);

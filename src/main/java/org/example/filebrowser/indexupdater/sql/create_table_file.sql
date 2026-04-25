@@ -5,6 +5,7 @@ create table file (
     path VARCHAR(300) unique not null,
     file_creation_time TIMESTAMP not null,
     file_last_modified_time TIMESTAMP not null,
+    file_last_accessed_time TIMESTAMP not null,
     size BIGINT not null,
 
     read_access BOOLEAN not null,
