@@ -56,15 +56,14 @@ public class PgQuerier implements IQuerier {
             PreparedStatement st = conn.prepareStatement(
                     """
                             with query as (
-                                select to_tsquery('english', ?) as q
+                                select to_tsquery('simple', ?) as q
                             )
                             select f.name || '.' || f.extension as full_name,
                                    f.path,
                                    f.read_access,
-                                   ts_headline('english', coalesce(f.content, ''), q.q) as headline
+                                   ts_headline('simple', coalesce(f.content, ''), q.q) as headline
                             from file f, query q
                             where f.ts @@ q.q
-                            order by ts_rank_cd(f.ts, q.q, 4) desc
                             limit ? offset ?;
                     """);
 

@@ -20,8 +20,7 @@ create table file (
 
 alter table file add column ts tsvector
     generated always as (
-        setweight(to_tsvector('english', coalesce(name, '')), 'A') ||
-        setweight(to_tsvector('english', coalesce(content, '')), 'B')
+            to_tsvector('simple', coalesce(content, ''))
         ) stored;
 
 create index ts_idx on file using gin (ts);
