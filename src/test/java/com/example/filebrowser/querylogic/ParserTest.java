@@ -3,6 +3,7 @@ package com.example.filebrowser.querylogic;
 import org.example.filebrowser.querylogic.Lexer;
 import org.example.filebrowser.querylogic.Parser;
 import org.example.filebrowser.querylogic.parser.*;
+import org.example.filebrowser.querymanager.QueryBuilder;
 import org.junit.jupiter.api.Test;
 
 public class ParserTest {
@@ -171,5 +172,96 @@ public class ParserTest {
         );
 
         assert (ast.equals(realAst));
+    }
+
+    @Test
+    public void testSQLName() {
+        String input = "name:\"my file\"";
+        Lexer lexer = new Lexer(input);
+        Parser parser = new Parser(lexer);
+        Expr ast = parser.parseExpression();
+        String sql = QueryBuilder.exprToSQL(ast).trim();
+
+        String expected = "(name LIKE '%my file%')";
+
+        assert (sql.equals(expected));
+    }
+
+    @Test
+    public void testSQLExtension() {
+        String input = "extension:mp4";
+        Lexer lexer = new Lexer(input);
+        Parser parser = new Parser(lexer);
+        Expr ast = parser.parseExpression();
+        String sql = QueryBuilder.exprToSQL(ast).trim();
+
+        String expected = "(extension = 'mp4')";
+
+        assert (sql.equals(expected));
+    }
+
+    @Test
+    public void testSQLPath() {
+        String input = "path:\"C:\\Downloads";
+        Lexer lexer = new Lexer(input);
+        Parser parser = new Parser(lexer);
+        Expr ast = parser.parseExpression();
+        String sql = QueryBuilder.exprToSQL(ast).trim();
+
+        String expected = "(path LIKE '%\"C:/Downloads%')";
+
+        assert (sql.equals(expected));
+    }
+
+    @Test
+    public void testSQLTime() {
+        String input = "created:<=2007-10-3T13:00:00 OR modified:2007-10-3T13:00:00..2007-10-13 OR accessed:2007-10-3";
+        Lexer lexer = new Lexer(input);
+        Parser parser = new Parser(lexer);
+        Expr ast = parser.parseExpression();
+        String sql = QueryBuilder.exprToSQL(ast).trim();
+
+        String expected = "( ( (file_creation_time <= '2007-10-03 13:00:00.0') OR (file_last_modified_time BETWEEN '2007-10-03 13:00:00.0' AND '2007-10-13 00:00:00.0') ) OR (file_last_accessed_time >= '2007-10-03' AND file_last_accessed_time < '2007-10-04') )";
+
+        assert (sql.equals(expected));
+    }
+
+    @Test
+    public void testSQLSize() {
+        String input = "size:>20000 OR size:10..100";
+        Lexer lexer = new Lexer(input);
+        Parser parser = new Parser(lexer);
+        Expr ast = parser.parseExpression();
+        String sql = QueryBuilder.exprToSQL(ast).trim();
+
+        String expected = "( (size > 20000) OR (size BETWEEN 10 AND 100) )";
+
+        assert (sql.equals(expected));
+    }
+
+    @Test
+    public void testSQLReadAccess() {
+        String input = "read:true";
+        Lexer lexer = new Lexer(input);
+        Parser parser = new Parser(lexer);
+        Expr ast = parser.parseExpression();
+        String sql = QueryBuilder.exprToSQL(ast).trim();
+
+        String expected = "(read_access = TRUE)";
+
+        assert (sql.equals(expected));
+    }
+
+    @Test
+    public void testSQLContent() {
+        String input = "content:\"ana are mere\"";
+        Lexer lexer = new Lexer(input);
+        Parser parser = new Parser(lexer);
+        Expr ast = parser.parseExpression();
+        String sql = QueryBuilder.exprToSQL(ast).trim();
+
+        String expected = "(ts @@ plainto_tsquery('simple', 'ana are mere'))";
+
+        assert (sql.equals(expected));
     }
 }
