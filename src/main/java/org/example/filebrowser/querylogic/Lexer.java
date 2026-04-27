@@ -1,5 +1,7 @@
 package org.example.filebrowser.querylogic;
 
+import org.example.filebrowser.utils.exceptions.ParserException;
+
 public class Lexer {
     private final String input;
     private int pos = 0;
@@ -41,7 +43,7 @@ public class Lexer {
             return new Token(TokenType.COMMAND, command);
         }
 
-        throw new RuntimeException("Unrecognized token: " + c);
+        throw new ParserException("Unrecognized token: " + c);
     }
 
     private void skipWhitespace() {

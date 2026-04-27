@@ -1,6 +1,7 @@
 package org.example.filebrowser.querylogic;
 
 import org.example.filebrowser.querylogic.parser.*;
+import org.example.filebrowser.utils.exceptions.ParserException;
 
 public class Parser {
     private final Lexer lexer;
@@ -13,7 +14,7 @@ public class Parser {
 
     private void consume(TokenType expected) {
         if (current.getType() != expected) {
-            throw new RuntimeException("Expected " + expected + " but got " + current.getType());
+            throw new ParserException("Expected " + expected + " but got " + current.getType());
         }
         current = lexer.nextToken();
     }
@@ -70,7 +71,7 @@ public class Parser {
             return expr;
         }
 
-        throw new RuntimeException("Unexpected token " + current.getType());
+        throw new ParserException("Unexpected token " + current.getType());
     }
 
     private boolean isStartOfNotExpr(Token token) {
