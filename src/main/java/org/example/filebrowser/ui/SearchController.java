@@ -4,6 +4,7 @@ import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
@@ -14,6 +15,8 @@ import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 import org.example.filebrowser.crawler.Crawling;
 import org.example.filebrowser.model.QueryFileModel;
+import org.example.filebrowser.model.QuerySpecs;
+import org.example.filebrowser.model.RankingStrategy;
 import org.example.filebrowser.querylogic.IQuerier;
 import org.example.filebrowser.utils.CrawlConfig;
 import org.example.filebrowser.utils.ReportType;
@@ -36,6 +39,12 @@ public class SearchController {
 
     @FXML
     private TextField queryInput;
+
+    @FXML
+    private ChoiceBox<RankingStrategy> rankingStrategyChoice;
+
+    @FXML
+    private CheckBox increasingOrderCheckBox;
 
     @FXML
     private Button searchButton;
@@ -85,13 +94,20 @@ public class SearchController {
 
     @FXML
     private void initialize() {
+        rankingStrategyChoice.setItems(FXCollections.observableArrayList(RankingStrategy.values()));
+        rankingStrategyChoice.setValue(RankingStrategy.RELEVANCE);
+        increasingOrderCheckBox.setSelected(true);
         crawlReportTypeChoice.setItems(FXCollections.observableArrayList(ReportType.values()));
 
         searchButton.setDisable(true);
+        rankingStrategyChoice.setDisable(true);
+        increasingOrderCheckBox.setDisable(true);
         crawlButton.setDisable(true);
         resultsList.setPlaceholder(new Label("No results yet."));
         resultsList.setCellFactory(_ -> new QueryResultCell());
         queryInput.setOnAction(_ -> onSearchClicked());
+        rankingStrategyChoice.getSelectionModel().selectedItemProperty().addListener((_, _, _) -> executeSearch(false));
+        increasingOrderCheckBox.selectedProperty().addListener((_, _, _) -> executeSearch(false));
         statusLabel.setText("Connecting to database...");
 
         try {
@@ -104,6 +120,8 @@ public class SearchController {
     public void setQuerier(IQuerier querier) {
         this.querier = querier;
         searchButton.setDisable(false);
+        rankingStrategyChoice.setDisable(false);
+        increasingOrderCheckBox.setDisable(false);
         queryInput.setDisable(false);
         statusLabel.setText("Ready. Insert a query and press Search.");
     }
@@ -129,6 +147,8 @@ public class SearchController {
     public void setInitializationError(String message) {
         queryInput.setDisable(true);
         searchButton.setDisable(true);
+        rankingStrategyChoice.setDisable(true);
+        increasingOrderCheckBox.setDisable(true);
         statusLabel.setText(message);
     }
 
@@ -266,7 +286,17 @@ public class SearchController {
         Task<List<QueryFileModel>> task = new Task<>() {
             @Override
             protected List<QueryFileModel> call() throws QueryManagerException {
-                return querier.getNextFilesMatching(MAX_RESULTS, 0, query);
+                RankingStrategy rankingStrategy = rankingStrategyChoice.getValue();
+                if (rankingStrategy == null) {
+                    rankingStrategy = RankingStrategy.RELEVANCE;
+                }
+
+                return querier.getNextFilesMatching(
+                        new QuerySpecs(
+                                MAX_RESULTS, 0,
+                                rankingStrategy,
+                                increasingOrderCheckBox.isSelected()
+                        ), query);
             }
         };
 
