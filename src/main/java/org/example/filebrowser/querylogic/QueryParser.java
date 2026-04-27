@@ -1,6 +1,8 @@
 package org.example.filebrowser.querylogic;
 
 import org.example.filebrowser.model.QueryFileModel;
+import org.example.filebrowser.model.QuerySpecs;
+import org.example.filebrowser.model.RankingStrategy;
 import org.example.filebrowser.querymanager.IDatabaseQuerier;
 import org.example.filebrowser.querymanager.PgQuerier;
 import org.example.filebrowser.utils.exceptions.ParserException;
@@ -16,11 +18,11 @@ public class QueryParser implements IQuerier {
     }
 
     @Override
-    public List<QueryFileModel> getNextFilesMatching(int nrFiles, int offset, String query) throws QueryManagerException {
+    public List<QueryFileModel> getNextFilesMatching(QuerySpecs querySpecs, String query) throws QueryManagerException {
         try {
             // sanitize query by eliminating "'"
             Parser parser = new Parser(new Lexer(query.replace("'", "")));
-            return databaseQuerier.getNextFilesMatching(nrFiles, offset, parser.parseExpression());
+            return databaseQuerier.getNextFilesMatching(querySpecs, parser.parseExpression());
         } catch (ParserException e) {
             throw new QueryManagerException(e.getMessage());
         }
