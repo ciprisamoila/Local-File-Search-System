@@ -5,6 +5,7 @@ public record FileModel(
         String checksumValue,
         String content,
         long lastScanId,
-        boolean readAccess
+        boolean readAccess,
+        double score
 ) {
 }
