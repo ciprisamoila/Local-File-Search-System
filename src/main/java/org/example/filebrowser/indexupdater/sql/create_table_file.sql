@@ -12,6 +12,8 @@ create table file (
     checksum CHAR(64),
     content TEXT,
 
+    score DOUBLE PRECISION not null,
+
     last_scan_id BIGINT not null,
 
     created_at TIMESTAMP DEFAULT current_timestamp,

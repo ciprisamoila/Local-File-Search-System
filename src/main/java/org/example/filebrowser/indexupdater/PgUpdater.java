@@ -111,8 +111,9 @@ public class PgUpdater implements IUpdater{
                             "read_access," +
                             "checksum, " +
                             "content, " +
+                            "score, " +
                             "last_scan_id" +
-                            ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                            ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
             );
 
             st.setString(1, fileModel.fileAttributes().name());
@@ -125,7 +126,8 @@ public class PgUpdater implements IUpdater{
             st.setBoolean(8, fileModel.readAccess());
             st.setString(9, fileModel.checksumValue());
             st.setString(10, fileModel.content());
-            st.setLong(11, fileModel.lastScanId());
+            st.setDouble(11, fileModel.score());
+            st.setLong(12, fileModel.lastScanId());
 
             st.executeUpdate();
 
@@ -149,6 +151,7 @@ public class PgUpdater implements IUpdater{
                                 "read_access = ?, " +
                                 "checksum = ?, " +
                                 "content = ?, " +
+                                "score = ?, " +
                                 "last_scan_id = ?, " +
                                 "updated_at = DEFAULT " +
                             "WHERE id = ?"
@@ -161,8 +164,9 @@ public class PgUpdater implements IUpdater{
             st.setBoolean(5, fileModel.readAccess());
             st.setString(6, fileModel.checksumValue());
             st.setString(7, fileModel.content());
-            st.setLong(8, fileModel.lastScanId());
-            st.setLong(9, fileId);
+            st.setDouble(8, fileModel.score());
+            st.setLong(9, fileModel.lastScanId());
+            st.setLong(10, fileId);
 
             st.executeUpdate();
 
