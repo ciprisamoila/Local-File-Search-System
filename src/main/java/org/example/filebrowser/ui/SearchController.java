@@ -1,6 +1,5 @@
 package org.example.filebrowser.ui;
 
-import javafx.animation.PauseTransition;
 import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
@@ -13,10 +12,9 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
-import javafx.util.Duration;
 import org.example.filebrowser.crawler.Crawling;
 import org.example.filebrowser.model.QueryFileModel;
-import org.example.filebrowser.querymanager.IQuerier;
+import org.example.filebrowser.querylogic.IQuerier;
 import org.example.filebrowser.utils.CrawlConfig;
 import org.example.filebrowser.utils.ReportType;
 import org.example.filebrowser.utils.exceptions.ConfigException;
@@ -33,7 +31,6 @@ import java.util.stream.Stream;
 
 public class SearchController {
     private static final int MAX_RESULTS = 100;
-    private static final Duration LIVE_SEARCH_DELAY = Duration.millis(300);
     private static final Pattern BOLD_SEGMENT_PATTERN = Pattern.compile("(?i)<b>(.*?)</b>", Pattern.DOTALL);
     private static final Pattern ANY_TAG_PATTERN = Pattern.compile("<[^>]+>");
 
@@ -77,7 +74,6 @@ public class SearchController {
         t.setDaemon(true);
         return t;
     });
-    private final PauseTransition liveSearchDelay = new PauseTransition(LIVE_SEARCH_DELAY);
 
     private IQuerier querier;
     private Crawling crawler;
@@ -96,8 +92,6 @@ public class SearchController {
         resultsList.setPlaceholder(new Label("No results yet."));
         resultsList.setCellFactory(_ -> new QueryResultCell());
         queryInput.setOnAction(_ -> onSearchClicked());
-        queryInput.textProperty().addListener((_, _, _) -> scheduleLiveSearch());
-        liveSearchDelay.setOnFinished(_ -> executeSearch(false));
         statusLabel.setText("Connecting to database...");
 
         try {
@@ -140,7 +134,6 @@ public class SearchController {
 
     @FXML
     private void onSearchClicked() {
-        liveSearchDelay.stop();
         executeSearch(true);
     }
 
@@ -184,10 +177,6 @@ public class SearchController {
         });
 
         runningCrawl = crawlExecutor.submit(crawlTask);
-    }
-
-    private void scheduleLiveSearch() {
-        liveSearchDelay.playFromStart();
     }
 
     private void loadCurrentCrawlConfig() throws ConfigException {
@@ -328,13 +317,26 @@ public class SearchController {
             Label pathLabel = new Label(item.path());
             pathLabel.setStyle("-fx-text-fill: #425466;");
 
+            Label creationTimeLabel = new Label("created: " + item.creation_time());
+            creationTimeLabel.setStyle("-fx-text-fill: #425466;");
+
+            Label lastModifiedTimeLabel = new Label("modified: " + item.last_modified_time());
+            lastModifiedTimeLabel.setStyle("-fx-text-fill: #425466");
+
+            Label lastAccessedTimeLabel = new Label("accessed: " + item.last_accessed_time());
+            lastAccessedTimeLabel.setStyle("-fx-text-fill: #425466");
+
+            Label sizeLabel = new Label("size: " + item.size());
+            sizeLabel.setStyle("-fx-text-fill: #425466;");
+
             Label accessLabel = new Label(item.readAccess() ? "Readable" : "No read access");
             accessLabel.setStyle(item.readAccess() ? "-fx-text-fill: #1b5e20;" : "-fx-text-fill: #b71c1c;");
 
             TextFlow headlineFlow = buildHeadlineFlow(item.headline());
             headlineFlow.setStyle("-fx-fill: #1f2937;");
 
-            VBox container = new VBox(4, nameLabel, pathLabel, accessLabel, headlineFlow);
+            VBox container = new VBox(4, nameLabel, pathLabel, creationTimeLabel,
+                    lastModifiedTimeLabel, lastAccessedTimeLabel, sizeLabel, accessLabel, headlineFlow);
             container.setStyle("-fx-padding: 8 0 8 0;");
 
             setText(null);

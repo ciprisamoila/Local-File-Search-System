@@ -6,8 +6,8 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 import org.example.filebrowser.crawler.Crawling;
 import org.example.filebrowser.crawler.FileCrawlerManager;
+import org.example.filebrowser.querylogic.QueryParser;
 import org.example.filebrowser.ui.SearchController;
-import org.example.filebrowser.querymanager.PgQuerier;
 import org.example.filebrowser.utils.exceptions.QueryManagerException;
 import org.example.filebrowser.utils.exceptions.TableDoesNotExist;
 
@@ -27,10 +27,10 @@ public class HelloApplication extends Application {
 
         try {
             try {
-                controller.setQuerier(new PgQuerier());
+                controller.setQuerier(new QueryParser());
             } catch (TableDoesNotExist e) {
                 controller.runStartCrawl();
-                controller.setQuerier(new PgQuerier());
+                controller.setQuerier(new QueryParser());
             }
         } catch (QueryManagerException e) {
             controller.setInitializationError("Database connection failed: " + e.getMessage());
