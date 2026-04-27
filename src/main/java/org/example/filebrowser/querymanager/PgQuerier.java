@@ -1,6 +1,7 @@
 package org.example.filebrowser.querymanager;
 
 import org.example.filebrowser.model.QueryFileModel;
+import org.example.filebrowser.model.QuerySpecs;
 import org.example.filebrowser.querylogic.parser.Expr;
 import org.example.filebrowser.utils.PgUtils;
 import org.example.filebrowser.utils.exceptions.ParserException;
@@ -53,7 +54,7 @@ public class PgQuerier implements IDatabaseQuerier {
     }
 
     @Override
-    public List<QueryFileModel> getNextFilesMatching(int nrFiles, int offset, Expr ast) throws QueryManagerException {
+    public List<QueryFileModel> getNextFilesMatching(QuerySpecs querySpecs, Expr ast) throws QueryManagerException {
         try {
             String query;
             try {
@@ -62,7 +63,12 @@ public class PgQuerier implements IDatabaseQuerier {
                 throw new QueryManagerException(e.getMessage());
             }
             System.out.println(query);
-            // 4 divides the rank by the mean harmonic distance between extents (this is implemented only by ts_rank_cd)
+            String rankColumn = switch(querySpecs.rankingStrategy()) {
+                case RELEVANCE -> "score";
+                case ALPHABETICAL -> "name";
+                case DATE_ACCESSED -> "file_last_accessed_time";
+            };
+
             PreparedStatement st = conn.prepareStatement(String.format(
                     """
                             select name || '.' || extension as full_name,
@@ -74,12 +80,13 @@ public class PgQuerier implements IDatabaseQuerier {
                                    read_access,
                                    substring(content from 0 for 32) as headline
                             from file
-                            where %s
+                            where %s 
+                            order by %s %s
                             limit ? offset ?;
-                    """, query));
+                    """, query, rankColumn, querySpecs.increasing() ? "" : "desc"));
 
-            st.setInt(1, nrFiles);
-            st.setInt(2, offset);
+            st.setInt(1, querySpecs.nrFiles());
+            st.setInt(2, querySpecs.offset());
 
             ResultSet rs = st.executeQuery();
 
