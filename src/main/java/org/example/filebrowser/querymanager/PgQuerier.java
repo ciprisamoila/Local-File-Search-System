@@ -1,13 +1,16 @@
 package org.example.filebrowser.querymanager;
 
 import org.example.filebrowser.model.QueryFileModel;
+import org.example.filebrowser.querylogic.parser.Expr;
 import org.example.filebrowser.utils.PgUtils;
+import org.example.filebrowser.utils.exceptions.ParserException;
 import org.example.filebrowser.utils.exceptions.QueryManagerException;
 import org.example.filebrowser.utils.exceptions.TableDoesNotExist;
 import org.json.JSONException;
 
 import java.io.FileNotFoundException;
 import java.sql.*;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -15,7 +18,7 @@ import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class PgQuerier implements IQuerier {
+public class PgQuerier implements IDatabaseQuerier {
     Logger logger = Logger.getLogger("querymanager");
     Connection conn;
 
@@ -50,26 +53,33 @@ public class PgQuerier implements IQuerier {
     }
 
     @Override
-    public List<QueryFileModel> getNextFilesMatching(int nrFiles, int offset, String query) throws QueryManagerException {
+    public List<QueryFileModel> getNextFilesMatching(int nrFiles, int offset, Expr ast) throws QueryManagerException {
         try {
+            String query;
+            try {
+                query = QueryBuilder.exprToSQL(ast);
+            } catch (ParserException e) {
+                throw new QueryManagerException(e.getMessage());
+            }
+            System.out.println(query);
             // 4 divides the rank by the mean harmonic distance between extents (this is implemented only by ts_rank_cd)
-            PreparedStatement st = conn.prepareStatement(
+            PreparedStatement st = conn.prepareStatement(String.format(
                     """
-                            with query as (
-                                select to_tsquery('simple', ?) as q
-                            )
-                            select f.name || '.' || f.extension as full_name,
-                                   f.path,
-                                   f.read_access,
-                                   ts_headline('simple', coalesce(f.content, ''), q.q) as headline
-                            from file f, query q
-                            where f.ts @@ q.q
+                            select name || '.' || extension as full_name,
+                                   path,
+                                   file_creation_time,
+                                   file_last_modified_time,
+                                   file_last_accessed_time,
+                                   size,
+                                   read_access,
+                                   substring(content from 0 for 32) as headline
+                            from file
+                            where %s
                             limit ? offset ?;
-                    """);
+                    """, query));
 
-            st.setString(1, tokenizeQuery(query));
-            st.setInt(2, nrFiles);
-            st.setInt(3, offset);
+            st.setInt(1, nrFiles);
+            st.setInt(2, offset);
 
             ResultSet rs = st.executeQuery();
 
@@ -78,8 +88,12 @@ public class PgQuerier implements IQuerier {
                 fileList.add(new QueryFileModel(
                         rs.getString("full_name"),
                         rs.getString("path"),
-                        rs.getString("headline"),
-                        rs.getBoolean("read_access")
+                        rs.getString("file_creation_time"),
+                        rs.getString("file_last_modified_time"),
+                        rs.getString("file_last_accessed_time"),
+                        rs.getLong("size"),
+                        rs.getBoolean("read_access"),
+                        rs.getString("headline")
                 ));
             }
 
