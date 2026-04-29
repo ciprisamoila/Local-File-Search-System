@@ -26,3 +26,7 @@ alter table file add column ts tsvector
         ) stored;
 
 create index ts_idx on file using gin (ts);
+create index file_creation_time on file (file_creation_time);
+create index file_last_modified_time on file (file_last_modified_time);
+create index file_last_accessed_time on file (file_last_accessed_time);
+create index size on file (size);
