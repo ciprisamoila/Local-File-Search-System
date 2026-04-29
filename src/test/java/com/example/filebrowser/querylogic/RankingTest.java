@@ -10,7 +10,9 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.sql.Timestamp;
+import java.text.Collator;
 import java.util.List;
+import java.util.Locale;
 
 public class RankingTest {
     static IQuerier querier;
@@ -34,7 +36,7 @@ public class RankingTest {
         // now we check if indeed the results are sorted accordingly
         boolean failed = false;
         for (int i = 0; i < results.size() - 1; i++) {
-            if (results.get(i).fullName().compareToIgnoreCase(results.get(i + 1).fullName()) > 0 ) {
+            if (results.get(i).fullName().compareTo(results.get(i + 1).fullName()) > 0 ) {
                 failed = true;
                 break;
             }
@@ -56,7 +58,7 @@ public class RankingTest {
         // now we check if indeed the results are sorted accordingly
         boolean failed = false;
         for (int i = 0; i < results.size() - 1; i++) {
-            if (results.get(i).fullName().compareToIgnoreCase(results.get(i + 1).fullName()) < 0 ) {
+            if (results.get(i).fullName().compareTo(results.get(i + 1).fullName()) < 0 ) {
                 failed = true;
                 break;
             }

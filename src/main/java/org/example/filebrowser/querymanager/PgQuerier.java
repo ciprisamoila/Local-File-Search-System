@@ -3,7 +3,7 @@ package org.example.filebrowser.querymanager;
 import org.example.filebrowser.model.QueryFileModel;
 import org.example.filebrowser.model.QuerySpecs;
 import org.example.filebrowser.model.RankingStrategy;
-import org.example.filebrowser.querylogic.parser.Expr;
+import org.example.filebrowser.querylogic.parser.expression.Expr;
 import org.example.filebrowser.utils.PgUtils;
 import org.example.filebrowser.utils.exceptions.ParserException;
 import org.example.filebrowser.utils.exceptions.QueryManagerException;
@@ -15,7 +15,6 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.sql.*;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -123,7 +122,7 @@ public class PgQuerier implements IDatabaseQuerier, ObservedSubject {
             }
             String rankColumn = switch(querySpecs.rankingStrategy()) {
                 case RELEVANCE -> "score";
-                case ALPHABETICAL -> "name";
+                case ALPHABETICAL -> "full_name";
                 case DATE_ACCESSED -> "file_last_accessed_time";
                 case FREQUENCY -> "searched_file.nr_searches";
             };
@@ -131,7 +130,7 @@ public class PgQuerier implements IDatabaseQuerier, ObservedSubject {
 
             PreparedStatement st = conn.prepareStatement(String.format(
                     """
-                            select name || '.' || extension as full_name,
+                            select name collate \"C\" || '.' || extension as full_name,
                                    path,
                                    file_creation_time,
                                    file_last_modified_time,
