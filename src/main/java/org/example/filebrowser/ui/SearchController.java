@@ -3,11 +3,13 @@ package org.example.filebrowser.ui;
 import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
+import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
@@ -34,6 +36,7 @@ import java.util.stream.Stream;
 
 public class SearchController {
     private static final int MAX_RESULTS = 100;
+    private static final int MAX_QUERY_SUGGESTIONS = 8;
     private static final Pattern BOLD_SEGMENT_PATTERN = Pattern.compile("(?i)<b>(.*?)</b>", Pattern.DOTALL);
     private static final Pattern ANY_TAG_PATTERN = Pattern.compile("<[^>]+>");
 
@@ -78,6 +81,11 @@ public class SearchController {
         t.setDaemon(true);
         return t;
     });
+    private final ExecutorService suggestionExecutor = Executors.newSingleThreadExecutor(runnable -> {
+        Thread t = new Thread(runnable, "query-suggestion-worker");
+        t.setDaemon(true);
+        return t;
+    });
     private final ExecutorService crawlExecutor = Executors.newSingleThreadExecutor(runnable -> {
         Thread t = new Thread(runnable, "crawl-worker");
         t.setDaemon(true);
@@ -87,10 +95,14 @@ public class SearchController {
     private IQuerier querier;
     private Crawling crawler;
     private Future<?> runningSearch;
+    private Future<?> runningSuggestionLookup;
     private Future<?> runningCrawl;
     private int searchRequestId;
+    private int suggestionRequestId;
+    private boolean updatingQueryFromSuggestion;
     private boolean crawlConfigLoaded;
     private CrawlConfig initialConfig;
+    private final ContextMenu suggestionMenu = new ContextMenu();
 
     @FXML
     private void initialize() {
@@ -106,6 +118,12 @@ public class SearchController {
         resultsList.setPlaceholder(new Label("No results yet."));
         resultsList.setCellFactory(_ -> new QueryResultCell());
         queryInput.setOnAction(_ -> onSearchClicked());
+        queryInput.textProperty().addListener((_, _, _) -> refreshSuggestions());
+        queryInput.focusedProperty().addListener((_, _, focused) -> {
+            if (!focused) {
+                suggestionMenu.hide();
+            }
+        });
         rankingStrategyChoice.getSelectionModel().selectedItemProperty().addListener((_, _, _) -> executeSearch(false));
         increasingOrderCheckBox.selectedProperty().addListener((_, _, _) -> executeSearch(false));
         statusLabel.setText("Connecting to database...");
@@ -124,6 +142,7 @@ public class SearchController {
         increasingOrderCheckBox.setDisable(false);
         queryInput.setDisable(false);
         statusLabel.setText("Ready. Insert a query and press Search.");
+        refreshSuggestions();
     }
 
     public void setCrawler(Crawling crawler) {
@@ -267,6 +286,8 @@ public class SearchController {
             return;
         }
 
+        suggestionMenu.hide();
+
         String query = queryInput.getText() == null ? "" : queryInput.getText().trim();
         if (query.isEmpty()) {
             statusLabel.setText(fromButton ? "Please enter a search query." : "Type to search.");
@@ -325,8 +346,99 @@ public class SearchController {
         runningSearch = searchExecutor.submit(task);
     }
 
+    private void refreshSuggestions() {
+        if (updatingQueryFromSuggestion) {
+            return;
+        }
+
+        if (querier == null || queryInput.isDisabled()) {
+            suggestionMenu.hide();
+            return;
+        }
+
+        String prefix = queryInput.getText() == null ? "" : queryInput.getText().trim();
+
+        if (runningSuggestionLookup != null && !runningSuggestionLookup.isDone()) {
+            runningSuggestionLookup.cancel(true);
+        }
+
+        int requestId = ++suggestionRequestId;
+
+        Task<List<String>> task = new Task<>() {
+            @Override
+            protected List<String> call() {
+                List<String> queryHistory = querier.getQueryHistory(MAX_QUERY_SUGGESTIONS, prefix);
+                return queryHistory == null ? List.of() : queryHistory;
+            }
+        };
+
+        task.setOnSucceeded(_ -> {
+            if (requestId != suggestionRequestId) {
+                return;
+            }
+
+            List<String> suggestions = task.getValue();
+            showSuggestions(suggestions);
+        });
+
+        task.setOnFailed(_ -> {
+            if (requestId != suggestionRequestId) {
+                return;
+            }
+
+            suggestionMenu.hide();
+        });
+
+        runningSuggestionLookup = suggestionExecutor.submit(task);
+    }
+
+    private void showSuggestions(List<String> suggestions) {
+        suggestionMenu.getItems().clear();
+
+        if (suggestions == null || suggestions.isEmpty()) {
+            suggestionMenu.hide();
+            return;
+        }
+
+        for (String suggestion : suggestions) {
+            if (suggestion == null || suggestion.isBlank()) {
+                continue;
+            }
+
+            MenuItem item = new MenuItem(suggestion);
+            item.setOnAction(_ -> {
+                updatingQueryFromSuggestion = true;
+                try {
+                    queryInput.setText(suggestion);
+                    queryInput.positionCaret(suggestion.length());
+                } finally {
+                    updatingQueryFromSuggestion = false;
+                }
+                suggestionMenu.hide();
+                queryInput.requestFocus();
+            });
+            suggestionMenu.getItems().add(item);
+        }
+
+        if (suggestionMenu.getItems().isEmpty()) {
+            suggestionMenu.hide();
+            return;
+        }
+
+        if (!queryInput.isFocused()) {
+            return;
+        }
+
+        if (suggestionMenu.isShowing()) {
+            suggestionMenu.hide();
+        }
+
+        suggestionMenu.show(queryInput, javafx.geometry.Side.BOTTOM, 0, 0);
+    }
+
     public void shutdown() {
         searchExecutor.shutdownNow();
+        suggestionExecutor.shutdownNow();
         crawlExecutor.shutdownNow();
     }
 

@@ -22,9 +22,14 @@ public class QueryParser implements IQuerier {
         try {
             // sanitize query by eliminating "'"
             Parser parser = new Parser(new Lexer(query.replace("'", "")));
-            return databaseQuerier.getNextFilesMatching(querySpecs, parser.parseExpression());
+            return databaseQuerier.getNextFilesMatching(querySpecs, query, parser.parseExpression());
         } catch (ParserException e) {
             throw new QueryManagerException(e.getMessage());
         }
+    }
+
+    @Override
+    public List<String> getQueryHistory(int nrQueries, String query) {
+        return databaseQuerier.getQueryHistory(nrQueries, query);
     }
 }

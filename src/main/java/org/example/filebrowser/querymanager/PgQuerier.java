@@ -173,6 +173,31 @@ public class PgQuerier implements IDatabaseQuerier, ObservedSubject {
         }
     }
 
+    @Override
+    public List<String> getQueryHistory(int nrQueries, String query) {
+        try {
+            PreparedStatement preparedStatement = conn.prepareStatement(
+                    "SELECT query FROM query " +
+                            "WHERE query LIKE CONCAT(?, '%')" +
+                            "ORDER BY last_used_at DESC " +
+                            "LIMIT ?"
+            );
+
+            preparedStatement.setString(1, query);
+            preparedStatement.setInt(2, nrQueries);
+            ResultSet rs = preparedStatement.executeQuery();
+            List<String> queryHistory = new ArrayList<>();
+            while (rs.next()) {
+                queryHistory.add(rs.getString("query"));
+            }
+            return queryHistory;
+
+        } catch (SQLException e) {
+            logger.log(Level.WARNING, "Query history failed!\n" + e.getMessage());
+        }
+        return null;
+    }
+
     public static void main(String[] args) throws QueryManagerException {
         PgQuerier q = new PgQuerier();
 

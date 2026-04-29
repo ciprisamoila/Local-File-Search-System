@@ -9,4 +9,5 @@ import java.util.List;
 
 public interface IQuerier {
     List<QueryFileModel> getNextFilesMatching(QuerySpecs querySpecs, String query) throws QueryManagerException;
+    List<String> getQueryHistory(int nrQueries, String query);
 }
