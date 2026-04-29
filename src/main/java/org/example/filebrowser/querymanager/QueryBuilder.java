@@ -109,10 +109,11 @@ public class QueryBuilder {
 
             String op;
             String remaining;
-            if (Character.isDigit(command.charAt(0))) {
+            // add support for negative numbers
+            if (Character.isDigit(command.charAt(0)) || command.charAt(0) == '-') {
                 op = "=";
                 remaining = command;
-            } else if (Character.isDigit(command.charAt(1))) {
+            } else if (Character.isDigit(command.charAt(1)) || command.charAt(1) == '-') {
                 op = command.substring(0, 1);
                 remaining = command.substring(1);
             } else  {
