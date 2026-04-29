@@ -1,12 +1,11 @@
 package org.example.filebrowser.querymanager;
 
-import org.example.filebrowser.querylogic.Lexer;
-import org.example.filebrowser.querylogic.Parser;
-import org.example.filebrowser.querylogic.parser.*;
+import org.example.filebrowser.querylogic.parser.Lexer;
+import org.example.filebrowser.querylogic.parser.Parser;
+import org.example.filebrowser.querylogic.parser.expression.*;
 import org.example.filebrowser.utils.exceptions.ParserException;
 
 import java.sql.Date;
-import java.sql.Time;
 import java.sql.Timestamp;
 
 public class QueryBuilder {

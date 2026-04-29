@@ -1,8 +1,15 @@
-package org.example.filebrowser.querylogic;
+package org.example.filebrowser.querylogic.parser;
 
-import org.example.filebrowser.querylogic.parser.*;
+import org.example.filebrowser.querylogic.parser.expression.*;
 import org.example.filebrowser.utils.exceptions.ParserException;
 
+// Grammar:
+//expression   := or_expr
+//or_expr      := and_expr (OR and_expr)*
+//and_expr     := not_expr (AND? not_expr)*
+//not_expr     := NOT* primary
+//primary      := predicate | '(' expression ')'
+//predicate    := COMMAND
 public class Parser {
     private final Lexer lexer;
     private Token current;

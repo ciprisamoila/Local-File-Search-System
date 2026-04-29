@@ -1,4 +1,4 @@
-package org.example.filebrowser.querylogic;
+package org.example.filebrowser.querylogic.parser;
 
 import org.example.filebrowser.utils.exceptions.ParserException;
 

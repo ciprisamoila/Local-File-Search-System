@@ -1,8 +1,8 @@
 package com.example.filebrowser.querylogic;
 
-import org.example.filebrowser.querylogic.Lexer;
-import org.example.filebrowser.querylogic.Parser;
-import org.example.filebrowser.querylogic.parser.*;
+import org.example.filebrowser.querylogic.parser.Lexer;
+import org.example.filebrowser.querylogic.parser.Parser;
+import org.example.filebrowser.querylogic.parser.expression.*;
 import org.example.filebrowser.querymanager.QueryBuilder;
 import org.junit.jupiter.api.Test;
 

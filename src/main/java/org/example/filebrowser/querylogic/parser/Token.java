@@ -1,4 +1,4 @@
-package org.example.filebrowser.querylogic;
+package org.example.filebrowser.querylogic.parser;
 
 public class Token {
     private final TokenType type;

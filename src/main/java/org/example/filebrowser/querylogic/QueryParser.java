@@ -2,7 +2,8 @@ package org.example.filebrowser.querylogic;
 
 import org.example.filebrowser.model.QueryFileModel;
 import org.example.filebrowser.model.QuerySpecs;
-import org.example.filebrowser.model.RankingStrategy;
+import org.example.filebrowser.querylogic.parser.Lexer;
+import org.example.filebrowser.querylogic.parser.Parser;
 import org.example.filebrowser.querymanager.IDatabaseQuerier;
 import org.example.filebrowser.querymanager.PgQuerier;
 import org.example.filebrowser.utils.exceptions.ParserException;
