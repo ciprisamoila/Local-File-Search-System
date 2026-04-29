@@ -9,7 +9,10 @@ import org.example.filebrowser.utils.exceptions.QueryManagerException;
 import org.example.filebrowser.utils.exceptions.TableDoesNotExist;
 import org.json.JSONException;
 
+import java.io.BufferedReader;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.sql.*;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -19,9 +22,52 @@ import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class PgQuerier implements IDatabaseQuerier {
+public class PgQuerier implements IDatabaseQuerier, ObservedSubject {
     Logger logger = Logger.getLogger("querymanager");
     Connection conn;
+    private final List<Observer> observers = new ArrayList<>();
+
+    @Override
+    public void addObserver(Observer o) {
+        observers.add(o);
+    }
+
+    @Override
+    public void removeObserver(Observer o) {
+        observers.remove(o);
+    }
+
+    @Override
+    public void notifyObservers(Observation observation) {
+        for (Observer o : observers) {
+            o.update(observation);
+        }
+    }
+
+    private void executeFromFile(String filename) throws SQLException {
+        try {
+            Statement st = conn.createStatement();
+            BufferedReader br = new BufferedReader(new FileReader("src/main/java/org/example/filebrowser/querymanager/sql/" + filename));
+
+            StringBuilder query = new StringBuilder();
+            String line;
+            while ((line = br.readLine()) != null) {
+                // skip comments
+                if (line.trim().startsWith("--")) {
+                    continue;
+                }
+
+                query.append(line.trim()).append(" ");
+
+                if (line.trim().endsWith(";")) {
+                    st.execute(query.toString());
+                    query = new StringBuilder();
+                }
+            }
+        } catch (IOException e) {
+            throw new SQLException(e);
+        }
+    }
 
     public PgQuerier() throws QueryManagerException {
         String url = "jdbc:postgresql://localhost:5432/filebrowser";
@@ -39,6 +85,14 @@ public class PgQuerier implements IDatabaseQuerier {
                 // the table does not exist
                 throw new TableDoesNotExist("The table does not exist");
             }
+
+            // create if not exist table QUERY and SEARCH_ITEM
+            rs = metaData.getTables("filebrowser", "public", "query", null);
+            if (!rs.first()) {
+                executeFromFile("create_table_query.sql");
+            }
+
+            addObserver(new SearchTracker(url, props));
         } catch (SQLException | FileNotFoundException | JSONException e) {
             logger.log(Level.SEVERE, e.getMessage());
             throw new QueryManagerException(e.getMessage());
@@ -54,7 +108,7 @@ public class PgQuerier implements IDatabaseQuerier {
     }
 
     @Override
-    public List<QueryFileModel> getNextFilesMatching(QuerySpecs querySpecs, Expr ast) throws QueryManagerException {
+    public List<QueryFileModel> getNextFilesMatching(QuerySpecs querySpecs, String originalQuery, Expr ast) throws QueryManagerException {
         try {
             String query;
             try {
@@ -78,7 +132,8 @@ public class PgQuerier implements IDatabaseQuerier {
                                    file_last_accessed_time,
                                    size,
                                    read_access,
-                                   substring(content from 0 for 32) as headline
+                                   substring(content from 0 for 32) as headline,
+                                   id
                             from file
                             where %s 
                             order by %s %s
@@ -91,6 +146,7 @@ public class PgQuerier implements IDatabaseQuerier {
             ResultSet rs = st.executeQuery();
 
             List<QueryFileModel> fileList = new ArrayList<>();
+            List<Long> searchFileIds = new ArrayList<>();
             while (rs.next()) {
                 fileList.add(new QueryFileModel(
                         rs.getString("full_name"),
@@ -102,7 +158,13 @@ public class PgQuerier implements IDatabaseQuerier {
                         rs.getBoolean("read_access"),
                         rs.getString("headline")
                 ));
+                searchFileIds.add(rs.getLong("id"));
             }
+
+            notifyObservers(new Observation(
+                    searchFileIds,
+                    originalQuery
+            ));
 
             return fileList;
         } catch (SQLException e) {
@@ -114,6 +176,7 @@ public class PgQuerier implements IDatabaseQuerier {
     public static void main(String[] args) throws QueryManagerException {
         PgQuerier q = new PgQuerier();
 
-        System.out.println(q.tokenizeQuery("free of ch"));
+        List<String> queryHistory = q.getQueryHistory(100, null);
+        queryHistory.forEach(System.out::println);
     }
 }
