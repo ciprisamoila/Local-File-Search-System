@@ -8,6 +8,6 @@ import org.example.filebrowser.utils.exceptions.QueryManagerException;
 import java.util.List;
 
 public interface IQuerier {
-    List<QueryFileModel> getNextFilesMatching(QuerySpecs querySpecs, String query) throws QueryManagerException;
+    List<QueryFileModel> getNextFilesMatching(QuerySpecs querySpecs, String query, boolean isUnderTest) throws QueryManagerException;
     List<String> getQueryHistory(int nrQueries, String query);
 }

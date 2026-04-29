@@ -18,11 +18,11 @@ public class QueryParser implements IQuerier {
     }
 
     @Override
-    public List<QueryFileModel> getNextFilesMatching(QuerySpecs querySpecs, String query) throws QueryManagerException {
+    public List<QueryFileModel> getNextFilesMatching(QuerySpecs querySpecs, String query, boolean isUnderTest) throws QueryManagerException {
         try {
             // sanitize query by eliminating "'"
             Parser parser = new Parser(new Lexer(query.replace("'", "")));
-            return databaseQuerier.getNextFilesMatching(querySpecs, query, parser.parseExpression());
+            return databaseQuerier.getNextFilesMatching(querySpecs, query, parser.parseExpression(), isUnderTest);
         } catch (ParserException e) {
             throw new QueryManagerException(e.getMessage());
         }

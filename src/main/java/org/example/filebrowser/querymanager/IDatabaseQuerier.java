@@ -8,6 +8,6 @@ import org.example.filebrowser.utils.exceptions.QueryManagerException;
 import java.util.List;
 
 public interface IDatabaseQuerier {
-    List<QueryFileModel> getNextFilesMatching(QuerySpecs querySpecs, String initialQuery, Expr ast) throws QueryManagerException;
+    List<QueryFileModel> getNextFilesMatching(QuerySpecs querySpecs, String initialQuery, Expr ast, boolean isUnderTest) throws QueryManagerException;
     List<String> getQueryHistory(int nrQueries, String query);
 }

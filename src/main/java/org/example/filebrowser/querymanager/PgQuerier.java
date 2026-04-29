@@ -113,7 +113,7 @@ public class PgQuerier implements IDatabaseQuerier, ObservedSubject {
     }
 
     @Override
-    public List<QueryFileModel> getNextFilesMatching(QuerySpecs querySpecs, String originalQuery, Expr ast) throws QueryManagerException {
+    public List<QueryFileModel> getNextFilesMatching(QuerySpecs querySpecs, String originalQuery, Expr ast, boolean isUnderTest) throws QueryManagerException {
         try {
             String query;
             try {
@@ -151,7 +151,7 @@ public class PgQuerier implements IDatabaseQuerier, ObservedSubject {
             st.setInt(1, querySpecs.nrFiles());
             st.setInt(2, querySpecs.offset());
 
-            System.out.println("Query: \n" + st);
+            if (!isUnderTest) System.out.println("Query: \n" + st);
 
             ResultSet rs = st.executeQuery();
 
@@ -171,10 +171,12 @@ public class PgQuerier implements IDatabaseQuerier, ObservedSubject {
                 searchFileIds.add(rs.getLong("id"));
             }
 
-            notifyObservers(new Observation(
-                    searchFileIds,
-                    originalQuery
-            ));
+            if (!isUnderTest) {
+                notifyObservers(new Observation(
+                        searchFileIds,
+                        originalQuery
+                ));
+            }
 
             return fileList;
         } catch (SQLException e) {
