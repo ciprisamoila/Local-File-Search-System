@@ -35,7 +35,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 public class SearchController {
-    private static final int MAX_RESULTS = 100;
+    private static final int MAX_RESULTS = 20;
     private static final int MAX_QUERY_SUGGESTIONS = 8;
     private static final Pattern BOLD_SEGMENT_PATTERN = Pattern.compile("(?i)<b>(.*?)</b>", Pattern.DOTALL);
     private static final Pattern ANY_TAG_PATTERN = Pattern.compile("<[^>]+>");
@@ -124,7 +124,15 @@ public class SearchController {
                 suggestionMenu.hide();
             }
         });
-        rankingStrategyChoice.getSelectionModel().selectedItemProperty().addListener((_, _, _) -> executeSearch(false));
+        rankingStrategyChoice.getSelectionModel().selectedItemProperty().addListener((_, _, _) -> {
+            if (rankingStrategyChoice.getValue() == RankingStrategy.FREQUENCY) {
+                increasingOrderCheckBox.setDisable(true);
+                increasingOrderCheckBox.setSelected(false);
+            } else {
+                increasingOrderCheckBox.setDisable(false);
+            }
+            executeSearch(false);
+        });
         increasingOrderCheckBox.selectedProperty().addListener((_, _, _) -> executeSearch(false));
         statusLabel.setText("Connecting to database...");
 
@@ -317,7 +325,7 @@ public class SearchController {
                                 MAX_RESULTS, 0,
                                 rankingStrategy,
                                 increasingOrderCheckBox.isSelected()
-                        ), query);
+                        ), query, false);
             }
         };
 

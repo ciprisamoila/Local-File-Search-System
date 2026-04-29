@@ -25,7 +25,7 @@
             <VBox spacing="8.0">
                 <Label text="Search" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #1e293b;"/>
                 <HBox spacing="8.0">
-                    <TextField fx:id="queryInput" promptText="Insert query (e.g. project report)" HBox.hgrow="ALWAYS"/>
+                    <TextField fx:id="queryInput" promptText="Insert query" HBox.hgrow="ALWAYS"/>
                     <ChoiceBox fx:id="rankingStrategyChoice" prefWidth="150.0"/>
                     <CheckBox fx:id="increasingOrderCheckBox" text="Increasing" selected="true"/>
                     <Button fx:id="searchButton" text="Search" onAction="#onSearchClicked"/>
