@@ -2,5 +2,6 @@
 <project version="4">
   <component name="DataSourcePerFileMappings">
     <file url="file://$PROJECT_DIR$/src/main/java/org/example/filebrowser/querymanager/PgQuerier.java" value="40ac7d64-14e5-40ea-b2b1-75c06e2c31c1" />
+    <file url="file://$PROJECT_DIR$/src/main/java/org/example/filebrowser/querymanager/SearchTracker.java" value="40ac7d64-14e5-40ea-b2b1-75c06e2c31c1" />
   </component>
 </project>
