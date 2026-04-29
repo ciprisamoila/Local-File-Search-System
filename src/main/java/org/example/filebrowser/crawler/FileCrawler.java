@@ -75,16 +75,16 @@ public class FileCrawler {
                         FileModel fileModel = fileInspector.getFileModel(file, fileAttributes, scanId);
 
                         if (validationData == null) {
-                            System.out.println("Insert file");
+                            System.out.println("Insert file " + fileModel.fileAttributes().path());
                             nrFilesToInsert++;
                             insert(fileModel);
                         } else {
                             if (fileChecker.checksumHasBeenModified(validationData.checksumValue(), fileModel.checksumValue())) {
-                                System.out.println("Update file");
+                                System.out.println("Update file " + fileModel.fileAttributes().path());
                                 nrFilesToUpdate++;
                                 updateFile(validationData.id(), fileModel);
                             } else {
-                                System.out.println("Update just scanId");
+                                System.out.println("Update just scanId " + fileModel.fileAttributes().path());
                                 filePersistor.updateLastScanId(validationData.id(), scanId);
                             }
                         }

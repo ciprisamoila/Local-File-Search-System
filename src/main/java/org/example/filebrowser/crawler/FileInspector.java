@@ -94,6 +94,10 @@ public class FileInspector {
         if (attr.size() > config.maxFileSize())
             return false;
 
+        // dot acts as a wildcard
+        if (config.fileTypes()[0].equals("."))
+            return true;
+
         for (String ext : config.fileTypes())
             if (ext.equals(attr.extension()))
                 return true;
