@@ -1,5 +1,5 @@
 package org.example.filebrowser.model;
 
 public enum RankingStrategy {
-    RELEVANCE, ALPHABETICAL, DATE_ACCESSED
+    RELEVANCE, ALPHABETICAL, DATE_ACCESSED, FREQUENCY
 }

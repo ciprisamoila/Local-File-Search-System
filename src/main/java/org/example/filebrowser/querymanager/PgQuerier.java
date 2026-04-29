@@ -2,6 +2,7 @@ package org.example.filebrowser.querymanager;
 
 import org.example.filebrowser.model.QueryFileModel;
 import org.example.filebrowser.model.QuerySpecs;
+import org.example.filebrowser.model.RankingStrategy;
 import org.example.filebrowser.querylogic.parser.Expr;
 import org.example.filebrowser.utils.PgUtils;
 import org.example.filebrowser.utils.exceptions.ParserException;
@@ -86,10 +87,14 @@ public class PgQuerier implements IDatabaseQuerier, ObservedSubject {
                 throw new TableDoesNotExist("The table does not exist");
             }
 
-            // create if not exist table QUERY and SEARCH_ITEM
+            // create if not exist table QUERY and SEARCHED_FILE
             rs = metaData.getTables("filebrowser", "public", "query", null);
             if (!rs.first()) {
                 executeFromFile("create_table_query.sql");
+            }
+            rs = metaData.getTables("filebrowser", "public", "searched_file", null);
+            if (!rs.first()) {
+                executeFromFile("create_table_searched_file.sql");
             }
 
             addObserver(new SearchTracker(url, props));
@@ -116,12 +121,13 @@ public class PgQuerier implements IDatabaseQuerier, ObservedSubject {
             } catch (ParserException e) {
                 throw new QueryManagerException(e.getMessage());
             }
-            System.out.println(query);
             String rankColumn = switch(querySpecs.rankingStrategy()) {
                 case RELEVANCE -> "score";
                 case ALPHABETICAL -> "name";
                 case DATE_ACCESSED -> "file_last_accessed_time";
+                case FREQUENCY -> "searched_file.nr_searches";
             };
+            boolean frequencyOrder = querySpecs.rankingStrategy() == RankingStrategy.FREQUENCY;
 
             PreparedStatement st = conn.prepareStatement(String.format(
                     """
@@ -135,13 +141,17 @@ public class PgQuerier implements IDatabaseQuerier, ObservedSubject {
                                    substring(content from 0 for 32) as headline,
                                    id
                             from file
+                            %s
                             where %s 
                             order by %s %s
                             limit ? offset ?;
-                    """, query, rankColumn, querySpecs.increasing() ? "" : "desc"));
+                    """, frequencyOrder ? "join searched_file on file.id = searched_file.file_id" : "",
+                    query, rankColumn, querySpecs.increasing() ? "" : "desc"));
 
             st.setInt(1, querySpecs.nrFiles());
             st.setInt(2, querySpecs.offset());
+
+            System.out.println("Query: \n" + st);
 
             ResultSet rs = st.executeQuery();
 

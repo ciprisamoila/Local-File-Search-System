@@ -22,12 +22,25 @@ public class SearchTracker implements Observer {
         Task<Void> trackerTask = new Task<>() {
             @Override
             protected Void call() throws Exception {
+                // query insert
                 PreparedStatement preparedStatement = connection.prepareStatement(
                         "INSERT INTO query (query) VALUES (?)" +
                         "ON CONFLICT (query) DO UPDATE SET last_used_at = current_timestamp"
                 );
                 preparedStatement.setString(1, observation.query());
                 preparedStatement.executeUpdate();
+                preparedStatement.close();
+
+                // search results insert
+                preparedStatement = connection.prepareStatement(
+                        "INSERT INTO searched_file (file_id) VALUES (?)" +
+                        "ON CONFLICT (file_id) DO UPDATE SET nr_searches = searched_file.nr_searches + 1"
+                );
+
+                for (Long id : observation.searchFileIds()) {
+                    preparedStatement.setLong(1, id);
+                    preparedStatement.executeUpdate();
+                }
                 preparedStatement.close();
                 return null;
             }
