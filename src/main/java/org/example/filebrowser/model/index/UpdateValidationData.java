@@ -1,4 +1,4 @@
-package org.example.filebrowser.model;
+package org.example.filebrowser.model.index;
 
 import java.nio.file.attribute.FileTime;
 
