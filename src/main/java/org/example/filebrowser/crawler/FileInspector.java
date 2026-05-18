@@ -1,8 +1,12 @@
 package org.example.filebrowser.crawler;
 
 import org.apache.tika.Tika;
-import org.example.filebrowser.model.FileAttributes;
-import org.example.filebrowser.model.FileModel;
+import org.example.filebrowser.crawler.strategy.ContentInspectStrategy;
+import org.example.filebrowser.crawler.strategy.ImageFileStrategy;
+import org.example.filebrowser.crawler.strategy.TextFileStrategy;
+import org.example.filebrowser.model.index.FileAttributes;
+import org.example.filebrowser.model.index.FileModel;
+import org.example.filebrowser.model.index.FileType;
 import org.example.filebrowser.utils.CrawlConfig;
 import org.example.filebrowser.utils.exceptions.CrawlerException;
 
@@ -20,6 +24,18 @@ import static java.lang.Math.max;
 
 public class FileInspector {
     Logger logger = Logger.getLogger("crawler");
+
+    private ContentInspectStrategy strategy;
+
+    public void setStrategy(FileType fileType) throws CrawlerException {
+        if (fileType == null) {
+            throw new CrawlerException("FileType is null when setting strategy");
+        }
+        strategy = switch (fileType) {
+            case TEXT -> new TextFileStrategy();
+            case IMAGE -> new ImageFileStrategy();
+        };
+    }
 
     private BasicFileAttributes getBasicAttributes(File file) throws CrawlerException {
         Path path = file.toPath();
@@ -156,7 +172,8 @@ public class FileInspector {
         return 0.2 * score_pl + 0.2 * score_di + 0.2 * score_lat + 0.2 * score_s + 0.2 * score_ra;
     }
 
-    public FileModel getFileModel(File file, FileAttributes fileAttributes, long scanId) throws CrawlerException {
+    public FileModel getFileModel(File file, FileAttributes fileAttributes, long scanId, FileType fileType) throws CrawlerException {
+        FileModel baseFileModel;
         try {
             BufferedReader br = new BufferedReader(new FileReader(file));
             String line;
@@ -171,14 +188,15 @@ public class FileInspector {
 
             String checksum = bytesToHex(hashBytes);
 
-
-            return new FileModel(fileAttributes, checksum, content.toString(), scanId, true, scoreFile(fileAttributes, true));
+            baseFileModel = new FileModel(fileAttributes, checksum, scanId, true, scoreFile(fileAttributes, true), fileType);
         } catch (FileNotFoundException e) {
             // the file cannot be opened for reading
-            return new FileModel(fileAttributes, null, null, scanId, false, scoreFile(fileAttributes, false));
+            baseFileModel = new FileModel(fileAttributes, null, scanId, false, scoreFile(fileAttributes, false), fileType);
         } catch (IOException | NoSuchAlgorithmException e) {
             logger.log(Level.SEVERE, e.getMessage());
             throw new CrawlerException(e.getMessage());
         }
+
+        return strategy.getSpecificFileModel(baseFileModel);
     }
 }
