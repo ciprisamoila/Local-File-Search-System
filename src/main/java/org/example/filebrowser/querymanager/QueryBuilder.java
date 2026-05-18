@@ -3,23 +3,32 @@ package org.example.filebrowser.querymanager;
 import org.example.filebrowser.querylogic.parser.Lexer;
 import org.example.filebrowser.querylogic.parser.Parser;
 import org.example.filebrowser.querylogic.parser.expression.*;
+import org.example.filebrowser.querymanager.decorator.BaseQueryBuilder;
+import org.example.filebrowser.querymanager.decorator.IQueryBuilder;
 import org.example.filebrowser.utils.exceptions.ParserException;
 
 import java.sql.Date;
 import java.sql.Timestamp;
 
 public class QueryBuilder {
-    private static String exprToSQL(OrExpr orExpr) {
+
+    private final IQueryBuilder contentQueryBuilder;
+
+    public QueryBuilder(IQueryBuilder contentQueryBuilder) {
+        this.contentQueryBuilder = contentQueryBuilder;
+    }
+
+    private String exprToSQL(OrExpr orExpr) {
         return " (" + exprToSQL(orExpr.left()) + "OR" + exprToSQL(orExpr.right()) + ") ";
     }
-    private static String exprToSQL(AndExpr andExpr) {
+    private String exprToSQL(AndExpr andExpr) {
         return " (" + exprToSQL(andExpr.left()) + "AND" + exprToSQL(andExpr.right()) + ") ";
     }
-    private static String exprToSQL(NotExpr notExpr) {
+    private String exprToSQL(NotExpr notExpr) {
         return " ( NOT" + exprToSQL(notExpr.expr()) + ") ";
     }
 
-    private static String parseNameCommand(String command) {
+    private String parseNameCommand(String command) {
         if (command.startsWith("\"") && command.endsWith("\"")) {
             command = command.substring(1, command.length() - 1);
         } else if (command.endsWith("\"")) {
@@ -27,10 +36,10 @@ public class QueryBuilder {
         }
         return "name LIKE '%" + command + "%'";
     }
-    private static String parseExtensionCommand(String command) {
+    private String parseExtensionCommand(String command) {
         return "extension = '" + command + "'";
     }
-    private static String parsePathCommand(String command) {
+    private String parsePathCommand(String command) {
         if (command.startsWith("\"") && command.endsWith("\"")) {
             command = command.substring(1, command.length() - 1);
         } else if (command.endsWith("\"")) {
@@ -38,16 +47,16 @@ public class QueryBuilder {
         }
         return "path LIKE '%" + command.replace("\\", "/") + "%'";
     }
-    private static boolean containsTime(String command) {
+    private boolean containsTime(String command) {
         return command.contains("T");
     }
-    private static Timestamp getTimestamp(String str) {
+    private Timestamp getTimestamp(String str) {
         if (containsTime(str)) {
             return Timestamp.valueOf(str.replace("T", " "));
         }
         return Timestamp.valueOf(str + " 00:00:00");
     }
-    private static String parseTimeCommand(String field, String command) {
+    private String parseTimeCommand(String field, String command) {
         try {
             if (command.contains("..")) {
                 String[] split = command.split("\\.\\.");
@@ -95,7 +104,7 @@ public class QueryBuilder {
             throw new ParserException("Not a date in " + command);
         }
     }
-    private static String parseSizeCommand(String command) {
+    private String parseSizeCommand(String command) {
         try {
             if (command.contains("..")) {
                 // between operator
@@ -126,7 +135,7 @@ public class QueryBuilder {
             throw new ParserException("Not a number in " + command);
         }
     }
-    private static String parseReadCommand(String command) {
+    private String parseReadCommand(String command) {
         if (command.equals("true")) {
             return "read_access = TRUE";
         } else if (command.equals("false")) {
@@ -135,16 +144,18 @@ public class QueryBuilder {
 
         throw new ParserException("Wrong read command");
     }
-    private static String parseContentCommand(String command) {
+    private String parseContentCommand(String command) {
         if (command.startsWith("\"") && command.endsWith("\"")) {
             command = command.substring(1, command.length() - 1);
         } else if (command.endsWith("\"")) {
             throw new ParserException("Wrong quotations");
         }
-        return "ts @@ plainto_tsquery('simple', '" + command + "')";
+        // Query Decorator applies only on content commands
+        command = contentQueryBuilder.buildQuery(command);
+        return "ts @@ to_tsquery('simple', '" + command + "')";
     }
 
-    private static String exprToSQL(CommandExpr commandExpr) {
+    private String exprToSQL(CommandExpr commandExpr) {
         String[] tokens = commandExpr.command().split(":", 2); // time may contain ":"
         if (tokens.length < 2 || tokens[1].isEmpty()) {
             throw new ParserException("Invalid command: " + commandExpr.command());
@@ -164,7 +175,7 @@ public class QueryBuilder {
         return " (" + parsedCommand + ") ";
     }
 
-    public static String exprToSQL(Expr expr) {
+    public String exprToSQL(Expr expr) {
         return switch (expr) {
             case OrExpr orExpr -> exprToSQL(orExpr);
             case AndExpr andExpr -> exprToSQL(andExpr);
@@ -174,11 +185,16 @@ public class QueryBuilder {
     }
 
     public static void main(String[] args) {
-        String input = "name:\"adi e\" OR created:2026-03-29T10:10:10..2026-03-30 AND read:true NOT content:\"ana are mere\"";
-        Lexer lexer = new Lexer(input);
-        Parser parser = new Parser(lexer);
-        Expr ast = parser.parseExpression();
-        //Time.valueOf("qwwq");
-        System.out.println(QueryBuilder.exprToSQL(ast));
+//        String input = "name:\"adi e\" OR created:2026-03-29T10:10:10..2026-03-30 AND read:true NOT content:\"ana are mere\"";
+//        Lexer lexer = new Lexer(input);
+//        Parser parser = new Parser(lexer);
+//        Expr ast = parser.parseExpression();
+//        //Time.valueOf("qwwq");
+//        QueryBuilder queryBuilder = new QueryBuilder(new BaseQueryBuilder());
+//        System.out.println(queryBuilder.exprToSQL(ast));
+
+        String s = "con    tent";
+        s = s.replaceAll("\\s+", " ");
+        System.out.println(s);
     }
 }

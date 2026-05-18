@@ -4,6 +4,9 @@ import org.example.filebrowser.model.QueryFileModel;
 import org.example.filebrowser.model.QuerySpecs;
 import org.example.filebrowser.model.RankingStrategy;
 import org.example.filebrowser.querylogic.parser.expression.Expr;
+import org.example.filebrowser.querymanager.decorator.*;
+import org.example.filebrowser.querymanager.decorator.dictionary.ISynonymDictionary;
+import org.example.filebrowser.querymanager.decorator.dictionary.MapDictionary;
 import org.example.filebrowser.utils.PgUtils;
 import org.example.filebrowser.utils.exceptions.ParserException;
 import org.example.filebrowser.utils.exceptions.QueryManagerException;
@@ -111,12 +114,27 @@ public class PgQuerier implements IDatabaseQuerier, ObservedSubject {
                 .orElse("");
     }
 
+    private QueryBuilder queryBuilderFactory() {
+        ISynonymDictionary synonymDictionary = new MapDictionary();
+        IQueryBuilder contentQueryBuilder = new LogicDecorator(
+                new SynonymDecorator(
+                    new SanitizationDecorator(
+                            new BaseQueryBuilder()
+                    ),
+                    synonymDictionary
+                )
+        );
+
+        return new QueryBuilder(contentQueryBuilder);
+    }
+
     @Override
     public List<QueryFileModel> getNextFilesMatching(QuerySpecs querySpecs, String originalQuery, Expr ast, boolean isUnderTest) throws QueryManagerException {
         try {
             String query;
+            QueryBuilder queryBuilder = queryBuilderFactory();
             try {
-                query = QueryBuilder.exprToSQL(ast);
+                query = queryBuilder.exprToSQL(ast);
             } catch (ParserException e) {
                 throw new QueryManagerException(e.getMessage());
             }
