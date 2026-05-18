@@ -84,6 +84,38 @@ public class FileInspector {
         );
     }
 
+    // only TEXT and IMAGE are supported
+    public FileType getFileType(File file) throws CrawlerException {
+        Path path = file.toPath();
+        String mimeType;
+        Tika tika = new Tika();
+        String type;
+        try {
+            mimeType = Files.probeContentType(path);
+
+            // first stage -> mime type based
+            if (mimeType != null && mimeType.startsWith("text"))
+                return FileType.TEXT;
+
+            if (mimeType != null && mimeType.startsWith("image"))
+                return FileType.IMAGE;
+
+            // second stage -> content based
+            type = tika.detect(file);
+        } catch (IOException e) {
+            logger.log(Level.WARNING, e.getMessage());
+            throw new CrawlerException(e.getMessage());
+        }
+
+        if (type.startsWith("text"))
+            return FileType.TEXT;
+
+        if (type.startsWith("image"))
+            return FileType.IMAGE;
+
+        return null;
+    }
+
     public boolean isTextFile(File file) throws CrawlerException {
         Path path = file.toPath();
         String mimeType;

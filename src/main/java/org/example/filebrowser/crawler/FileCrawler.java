@@ -3,10 +3,7 @@ package org.example.filebrowser.crawler;
 import org.example.filebrowser.crawler.report.IReport;
 import org.example.filebrowser.crawler.report.ReportData;
 import org.example.filebrowser.indexupdater.IUpdater;
-import org.example.filebrowser.indexupdater.PgUpdater;
-import org.example.filebrowser.model.FileAttributes;
-import org.example.filebrowser.model.FileModel;
-import org.example.filebrowser.model.UpdateValidationData;
+import org.example.filebrowser.model.index.*;
 import org.example.filebrowser.utils.CrawlConfig;
 import org.example.filebrowser.utils.exceptions.CrawlerException;
 import org.example.filebrowser.utils.exceptions.IndexUpdaterException;
@@ -69,22 +66,24 @@ public class FileCrawler {
             } else if (!file.isDirectory()) {
                 // last accessed time must remain unchanged by content detection
                 FileAttributes fileAttributes = fileInspector.getFileAttributes(file);
-                if (fileInspector.isTextFile(file)) {
+                FileType fileType = fileInspector.getFileType(file);
+                if (fileType != null) {
+                    fileInspector.setStrategy(fileType);
                     if (fileInspector.verifiesConfig(fileAttributes, config)) {
                         UpdateValidationData validationData = filePersistor.searchByPath(file.getAbsolutePath().replace('\\', '/'));
-                        FileModel fileModel = fileInspector.getFileModel(file, fileAttributes, scanId);
+                        FileModel fileModel = fileInspector.getFileModel(file, fileAttributes, scanId, fileType);
 
                         if (validationData == null) {
-                            System.out.println("Insert file " + fileModel.fileAttributes().path());
+                            System.out.println("Insert file " + fileModel.getFileAttributes().path());
                             nrFilesToInsert++;
                             insert(fileModel);
                         } else {
-                            if (fileChecker.checksumHasBeenModified(validationData.checksumValue(), fileModel.checksumValue())) {
-                                System.out.println("Update file " + fileModel.fileAttributes().path());
+                            if (fileChecker.checksumHasBeenModified(validationData.checksumValue(), fileModel.getChecksumValue())) {
+                                System.out.println("Update file " + fileModel.getFileAttributes().path());
                                 nrFilesToUpdate++;
                                 updateFile(validationData.id(), fileModel);
                             } else {
-                                System.out.println("Update just scanId " + fileModel.fileAttributes().path());
+                                System.out.println("Update just scanId " + fileModel.getFileAttributes().path());
                                 filePersistor.updateLastScanId(validationData.id(), scanId);
                             }
                         }
