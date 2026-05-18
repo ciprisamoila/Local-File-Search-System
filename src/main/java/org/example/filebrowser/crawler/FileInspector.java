@@ -124,7 +124,11 @@ public class FileInspector {
     public double scoreFile(FileAttributes attr, boolean readAccess) {
         // path length score (by the number of subdirectories)
         String path = attr.path();
-        int length = path.length() - path.replace("/", "").length();
+        int length = 0;
+        for (int i = 0; i < path.length(); i++) {
+            if (path.charAt(i) == '/')
+                length++;
+        }
         double score_pl = 1.0 / length;
         // directory importance Windows only
         // Recycle Bin, Downloads -> 0 worst importance
