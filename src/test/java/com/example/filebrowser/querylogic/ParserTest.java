@@ -4,6 +4,9 @@ import org.example.filebrowser.querylogic.parser.Lexer;
 import org.example.filebrowser.querylogic.parser.Parser;
 import org.example.filebrowser.querylogic.parser.expression.*;
 import org.example.filebrowser.querymanager.QueryBuilder;
+import org.example.filebrowser.querymanager.decorator.*;
+import org.example.filebrowser.querymanager.decorator.dictionary.ISynonymDictionary;
+import org.example.filebrowser.querymanager.decorator.dictionary.MapDictionary;
 import org.junit.jupiter.api.Test;
 
 public class ParserTest {
@@ -174,13 +177,29 @@ public class ParserTest {
         assert (ast.equals(realAst));
     }
 
+    private QueryBuilder queryBuilderFactory() {
+        ISynonymDictionary synonymDictionary = new MapDictionary();
+        IQueryBuilder contentQueryBuilder = new LogicDecorator(
+                new SynonymDecorator(
+                        new SanitizationDecorator(
+                                new BaseQueryBuilder()
+                        ),
+                        synonymDictionary
+                )
+        );
+
+        return new QueryBuilder(contentQueryBuilder);
+    }
+
     @Test
     public void testSQLName() {
         String input = "name:\"my file\"";
         Lexer lexer = new Lexer(input);
         Parser parser = new Parser(lexer);
         Expr ast = parser.parseExpression();
-        String sql = QueryBuilder.exprToSQL(ast).trim();
+        QueryBuilder queryBuilder = queryBuilderFactory();
+
+        String sql = queryBuilder.exprToSQL(ast).trim();
 
         String expected = "(name LIKE '%my file%')";
 
@@ -193,7 +212,9 @@ public class ParserTest {
         Lexer lexer = new Lexer(input);
         Parser parser = new Parser(lexer);
         Expr ast = parser.parseExpression();
-        String sql = QueryBuilder.exprToSQL(ast).trim();
+        QueryBuilder queryBuilder = queryBuilderFactory();
+
+        String sql = queryBuilder.exprToSQL(ast).trim();
 
         String expected = "(extension = 'mp4')";
 
@@ -206,7 +227,9 @@ public class ParserTest {
         Lexer lexer = new Lexer(input);
         Parser parser = new Parser(lexer);
         Expr ast = parser.parseExpression();
-        String sql = QueryBuilder.exprToSQL(ast).trim();
+        QueryBuilder queryBuilder = queryBuilderFactory();
+
+        String sql = queryBuilder.exprToSQL(ast).trim();
 
         String expected = "(path LIKE '%\"C:/Downloads%')";
 
@@ -219,7 +242,9 @@ public class ParserTest {
         Lexer lexer = new Lexer(input);
         Parser parser = new Parser(lexer);
         Expr ast = parser.parseExpression();
-        String sql = QueryBuilder.exprToSQL(ast).trim();
+        QueryBuilder queryBuilder = queryBuilderFactory();
+
+        String sql = queryBuilder.exprToSQL(ast).trim();
 
         String expected = "( ( (file_creation_time <= '2007-10-03 13:00:00.0') OR (file_last_modified_time BETWEEN '2007-10-03 13:00:00.0' AND '2007-10-13 00:00:00.0') ) OR (file_last_accessed_time >= '2007-10-03' AND file_last_accessed_time < '2007-10-04') )";
 
@@ -232,7 +257,9 @@ public class ParserTest {
         Lexer lexer = new Lexer(input);
         Parser parser = new Parser(lexer);
         Expr ast = parser.parseExpression();
-        String sql = QueryBuilder.exprToSQL(ast).trim();
+        QueryBuilder queryBuilder = queryBuilderFactory();
+
+        String sql = queryBuilder.exprToSQL(ast).trim();
 
         String expected = "( (size > 20000) OR (size BETWEEN 10 AND 100) )";
 
@@ -245,7 +272,9 @@ public class ParserTest {
         Lexer lexer = new Lexer(input);
         Parser parser = new Parser(lexer);
         Expr ast = parser.parseExpression();
-        String sql = QueryBuilder.exprToSQL(ast).trim();
+        QueryBuilder queryBuilder = queryBuilderFactory();
+
+        String sql = queryBuilder.exprToSQL(ast).trim();
 
         String expected = "(read_access = TRUE)";
 
@@ -258,9 +287,11 @@ public class ParserTest {
         Lexer lexer = new Lexer(input);
         Parser parser = new Parser(lexer);
         Expr ast = parser.parseExpression();
-        String sql = QueryBuilder.exprToSQL(ast).trim();
+        QueryBuilder queryBuilder = queryBuilderFactory();
 
-        String expected = "(ts @@ plainto_tsquery('simple', 'ana are mere'))";
+        String sql = queryBuilder.exprToSQL(ast).trim();
+
+        String expected = "(ts @@ to_tsquery('simple', 'ana:* & are:* & mere:*'))";
 
         assert (sql.equals(expected));
     }
