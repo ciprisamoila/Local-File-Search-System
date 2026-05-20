@@ -10,7 +10,6 @@ create table file (
 
     read_access BOOLEAN not null,
     checksum CHAR(64),
-    content TEXT,
 
     score DOUBLE PRECISION not null,
 
@@ -20,13 +19,31 @@ create table file (
     updated_at TIMESTAMP DEFAULT current_timestamp
 );
 
-alter table file add column ts tsvector
-    generated always as (
-            to_tsvector('simple', coalesce(content, ''))
-        ) stored;
-
-create index ts_idx on file using gin (ts);
 create index file_creation_time on file (file_creation_time);
 create index file_last_modified_time on file (file_last_modified_time);
 create index file_last_accessed_time on file (file_last_accessed_time);
 create index size on file (size);
+
+CREATE TABLE text_file (
+    file_id BIGINT PRIMARY KEY,
+    content TEXT,
+
+    CONSTRAINT file_id_fk FOREIGN KEY (file_id)
+        REFERENCES file(id) ON DELETE CASCADE
+);
+
+alter table text_file add column ts tsvector
+    generated always as (
+            to_tsvector('simple', coalesce(content, ''))
+        ) stored;
+
+create index ts_idx on text_file using gin (ts);
+
+CREATE TABLE image_file (
+    file_id BIGINT PRIMARY KEY,
+    color VARCHAR(64),
+
+    CONSTRAINT file_id_fk FOREIGN KEY (file_id)
+        REFERENCES file(id) ON DELETE CASCADE
+);
+
