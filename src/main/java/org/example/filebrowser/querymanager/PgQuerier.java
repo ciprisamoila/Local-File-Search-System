@@ -3,10 +3,17 @@ package org.example.filebrowser.querymanager;
 import org.example.filebrowser.model.QueryFileModel;
 import org.example.filebrowser.model.QuerySpecs;
 import org.example.filebrowser.model.RankingStrategy;
+import org.example.filebrowser.model.index.FileType;
+import org.example.filebrowser.querylogic.parser.Lexer;
+import org.example.filebrowser.querylogic.parser.Parser;
 import org.example.filebrowser.querylogic.parser.expression.Expr;
 import org.example.filebrowser.querymanager.decorator.*;
 import org.example.filebrowser.querymanager.decorator.dictionary.ISynonymDictionary;
 import org.example.filebrowser.querymanager.decorator.dictionary.MapDictionary;
+import org.example.filebrowser.querymanager.tracking.Observation;
+import org.example.filebrowser.querymanager.tracking.ObservedSubject;
+import org.example.filebrowser.querymanager.tracking.Observer;
+import org.example.filebrowser.querymanager.tracking.SearchTracker;
 import org.example.filebrowser.utils.PgUtils;
 import org.example.filebrowser.utils.exceptions.ParserException;
 import org.example.filebrowser.utils.exceptions.QueryManagerException;
@@ -128,64 +135,90 @@ public class PgQuerier implements IDatabaseQuerier, ObservedSubject {
         return new QueryBuilder(contentQueryBuilder);
     }
 
+    private String buildFullQuery(Expr ast, QuerySpecs querySpecs) throws QueryManagerException {
+        StringBuilder query = new StringBuilder();
+
+        // SELECT clause
+        query.append("""
+SELECT name COLLATE "C" || '.' || extension AS full_name,
+       path,
+       file_creation_time,
+       file_last_modified_time,
+       file_last_accessed_time,
+       size,
+       read_access,
+       SUBSTRING(content FROM 0 FOR 32) AS headline,
+       type,
+       id
+FROM   file
+        """);
+
+        // JOIN clause
+        query.append("LEFT JOIN text_file ON file.id = text_file.file_id").append("\n");
+        query.append("LEFT JOIN image_file ON file.id = image_file.file_id").append("\n");
+        boolean frequencyOrder = querySpecs.rankingStrategy() == RankingStrategy.FREQUENCY;
+        if (frequencyOrder) {
+            query.append("JOIN searched_file ON file.id = searched_file.file_id").append('\n');
+        }
+
+        // WHERE clause
+        String whereClause;
+        QueryBuilder queryBuilder = queryBuilderFactory();
+        try {
+            whereClause = queryBuilder.exprToSQL(ast);
+        } catch (ParserException e) {
+            throw new QueryManagerException(e.getMessage());
+        }
+        if (!whereClause.isEmpty()) {
+            query.append("WHERE ").append(whereClause).append("\n");
+        }
+
+        // ORDER BY clause
+        String rankColumn = switch(querySpecs.rankingStrategy()) {
+            case RELEVANCE -> "score";
+            case ALPHABETICAL -> "full_name";
+            case DATE_ACCESSED -> "file_last_accessed_time";
+            case FREQUENCY -> "searched_file.nr_searches";
+        };
+        query.append("ORDER BY ").append(rankColumn);
+        if (!querySpecs.increasing()) {
+            query.append(" DESC");
+        }
+        query.append("\n");
+
+        // LIMIT clause
+        query.append("LIMIT ").append(querySpecs.nrFiles()).append('\n');
+        query.append("OFFSET ").append(querySpecs.offset()).append('\n');
+
+        return query.toString();
+    }
+
     @Override
     public List<QueryFileModel> getNextFilesMatching(QuerySpecs querySpecs, String originalQuery, Expr ast, boolean isUnderTest) throws QueryManagerException {
         try {
-            String query;
-            QueryBuilder queryBuilder = queryBuilderFactory();
-            try {
-                query = queryBuilder.exprToSQL(ast);
-            } catch (ParserException e) {
-                throw new QueryManagerException(e.getMessage());
+            PreparedStatement preparedStatement = conn.prepareStatement(buildFullQuery(ast, querySpecs));
+
+            if (!isUnderTest) {
+                System.out.println("Query: \n" + preparedStatement);
             }
-            String rankColumn = switch(querySpecs.rankingStrategy()) {
-                case RELEVANCE -> "score";
-                case ALPHABETICAL -> "full_name";
-                case DATE_ACCESSED -> "file_last_accessed_time";
-                case FREQUENCY -> "searched_file.nr_searches";
-            };
-            boolean frequencyOrder = querySpecs.rankingStrategy() == RankingStrategy.FREQUENCY;
 
-            PreparedStatement st = conn.prepareStatement(String.format(
-                    """
-                            select name collate \"C\" || '.' || extension as full_name,
-                                   path,
-                                   file_creation_time,
-                                   file_last_modified_time,
-                                   file_last_accessed_time,
-                                   size,
-                                   read_access,
-                                   substring(content from 0 for 32) as headline,
-                                   id
-                            from file
-                            %s
-                            where %s 
-                            order by %s %s
-                            limit ? offset ?;
-                    """, frequencyOrder ? "join searched_file on file.id = searched_file.file_id" : "",
-                    query, rankColumn, querySpecs.increasing() ? "" : "desc"));
-
-            st.setInt(1, querySpecs.nrFiles());
-            st.setInt(2, querySpecs.offset());
-
-            if (!isUnderTest) System.out.println("Query: \n" + st);
-
-            ResultSet rs = st.executeQuery();
+            ResultSet resultSet = preparedStatement.executeQuery();
 
             List<QueryFileModel> fileList = new ArrayList<>();
             List<Long> searchFileIds = new ArrayList<>();
-            while (rs.next()) {
+            while (resultSet.next()) {
                 fileList.add(new QueryFileModel(
-                        rs.getString("full_name"),
-                        rs.getString("path"),
-                        rs.getString("file_creation_time"),
-                        rs.getString("file_last_modified_time"),
-                        rs.getString("file_last_accessed_time"),
-                        rs.getLong("size"),
-                        rs.getBoolean("read_access"),
-                        rs.getString("headline")
+                        resultSet.getString("full_name"),
+                        resultSet.getString("path"),
+                        resultSet.getString("file_creation_time"),
+                        resultSet.getString("file_last_modified_time"),
+                        resultSet.getString("file_last_accessed_time"),
+                        resultSet.getLong("size"),
+                        resultSet.getBoolean("read_access"),
+                        resultSet.getString("headline"),
+                        FileType.valueOf(resultSet.getString("type"))
                 ));
-                searchFileIds.add(rs.getLong("id"));
+                searchFileIds.add(resultSet.getLong("id"));
             }
 
             if (!isUnderTest) {
@@ -230,7 +263,11 @@ public class PgQuerier implements IDatabaseQuerier, ObservedSubject {
     public static void main(String[] args) throws QueryManagerException {
         PgQuerier q = new PgQuerier();
 
-        List<String> queryHistory = q.getQueryHistory(100, null);
-        queryHistory.forEach(System.out::println);
+        String input = "created:<=2007-10-3T13:00:00 OR modified:2007-10-3T13:00:00..2007-10-13 OR accessed:2007-10-3 AND color:white";
+        Lexer lexer = new Lexer(input);
+        Parser parser = new Parser(lexer);
+        Expr ast = parser.parseExpression();
+
+        System.out.println(q.buildFullQuery(ast, new QuerySpecs(100, 0, RankingStrategy.ALPHABETICAL, true)));
     }
 }

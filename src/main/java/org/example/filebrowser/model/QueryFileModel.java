@@ -1,5 +1,7 @@
 package org.example.filebrowser.model;
 
+import org.example.filebrowser.model.index.FileType;
+
 public record QueryFileModel(
         String fullName, // name and extension
         String path,
@@ -8,6 +10,7 @@ public record QueryFileModel(
         String last_accessed_time,
         long size,
         boolean readAccess,
-        String headline
+        String headline,
+        FileType fileType
 ) {
 }
