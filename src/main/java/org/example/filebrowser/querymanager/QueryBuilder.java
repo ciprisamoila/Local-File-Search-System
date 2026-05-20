@@ -1,14 +1,15 @@
 package org.example.filebrowser.querymanager;
 
-import org.example.filebrowser.querylogic.parser.Lexer;
-import org.example.filebrowser.querylogic.parser.Parser;
+import org.example.filebrowser.model.ImageColor;
 import org.example.filebrowser.querylogic.parser.expression.*;
-import org.example.filebrowser.querymanager.decorator.BaseQueryBuilder;
 import org.example.filebrowser.querymanager.decorator.IQueryBuilder;
 import org.example.filebrowser.utils.exceptions.ParserException;
 
 import java.sql.Date;
 import java.sql.Timestamp;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 public class QueryBuilder {
 
@@ -155,6 +156,17 @@ public class QueryBuilder {
         return "ts @@ to_tsquery('simple', '" + command + "')";
     }
 
+    private String parseColorCommand(String command) {
+        command = command.toUpperCase();
+        Set<String> availableColors = new HashSet<>();
+        Arrays.stream(ImageColor.values()).forEach(color -> availableColors.add(color.toString()));
+        if (availableColors.contains(command)) {
+            return "color = '" + command + "'";
+        }
+
+        throw new ParserException("Wrong color command");
+    }
+
     private String exprToSQL(CommandExpr commandExpr) {
         String[] tokens = commandExpr.command().split(":", 2); // time may contain ":"
         if (tokens.length < 2 || tokens[1].isEmpty()) {
@@ -170,6 +182,7 @@ public class QueryBuilder {
             case "size" -> parseSizeCommand(tokens[1]);
             case "read" -> parseReadCommand(tokens[1]);
             case "content" -> parseContentCommand(tokens[1]);
+            case "color" -> parseColorCommand(tokens[1]);
             default -> throw new ParserException("Unexpected value: " + tokens[0]);
         };
         return " (" + parsedCommand + ") ";
