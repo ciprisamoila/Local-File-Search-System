@@ -1,7 +1,7 @@
 package org.example.filebrowser.indexupdater;
 
-import org.example.filebrowser.model.FileModel;
-import org.example.filebrowser.model.UpdateValidationData;
+import org.example.filebrowser.model.index.FileModel;
+import org.example.filebrowser.model.index.UpdateValidationData;
 import org.example.filebrowser.utils.exceptions.IndexUpdaterException;
 
 public interface IUpdater {

@@ -1,7 +1,8 @@
 package org.example.filebrowser.indexupdater;
 
-import org.example.filebrowser.model.FileModel;
-import org.example.filebrowser.model.UpdateValidationData;
+import org.example.filebrowser.indexupdater.strategy.IFileIndexStrategy;
+import org.example.filebrowser.model.index.FileModel;
+import org.example.filebrowser.model.index.UpdateValidationData;
 import org.example.filebrowser.utils.PgUtils;
 import org.example.filebrowser.utils.exceptions.IndexUpdaterException;
 import org.json.JSONException;
@@ -13,9 +14,15 @@ import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class PgUpdater implements IUpdater{
+public class PgUpdater{
     private final Logger logger = Logger.getLogger("indexupdater");
     private final Connection conn;
+
+    private IFileIndexStrategy fileIndexStrategy;
+
+    public void setFileIndexStrategy(IFileIndexStrategy fileIndexStrategy) {
+        this.fileIndexStrategy = fileIndexStrategy;
+    }
 
     private void executeFromFile() throws SQLException {
         try {
@@ -70,7 +77,6 @@ public class PgUpdater implements IUpdater{
      * @return an {@code UpdateValidationData} object containing the data needed
      *          for update validation, or {@code null} if the file was not found
      */
-    @Override
     public UpdateValidationData searchByPath(String path) throws IndexUpdaterException {
         try {
             PreparedStatement st = conn.prepareStatement(
@@ -96,7 +102,6 @@ public class PgUpdater implements IUpdater{
         }
     }
 
-    @Override
     public void insert(FileModel fileModel) throws IndexUpdaterException {
         try {
             PreparedStatement st = conn.prepareStatement(
@@ -110,26 +115,31 @@ public class PgUpdater implements IUpdater{
                             "size, " +
                             "read_access," +
                             "checksum, " +
-                            "content, " +
                             "score, " +
                             "last_scan_id" +
-                            ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                            ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    Statement.RETURN_GENERATED_KEYS
             );
 
-            st.setString(1, fileModel.fileAttributes().name());
-            st.setString(2, fileModel.fileAttributes().extension());
-            st.setString(3, fileModel.fileAttributes().path());
-            st.setTimestamp(4, new Timestamp(fileModel.fileAttributes().creationTime().toMillis()));
-            st.setTimestamp(5, new Timestamp(fileModel.fileAttributes().lastModifiedTime().toMillis()));
-            st.setTimestamp(6, new Timestamp(fileModel.fileAttributes().lastAccessedTime().toMillis()));
-            st.setLong(7, fileModel.fileAttributes().size());
-            st.setBoolean(8, fileModel.readAccess());
-            st.setString(9, fileModel.checksumValue());
-            st.setString(10, fileModel.content());
-            st.setDouble(11, fileModel.score());
-            st.setLong(12, fileModel.lastScanId());
+            st.setString(1, fileModel.getFileAttributes().name());
+            st.setString(2, fileModel.getFileAttributes().extension());
+            st.setString(3, fileModel.getFileAttributes().path());
+            st.setTimestamp(4, new Timestamp(fileModel.getFileAttributes().creationTime().toMillis()));
+            st.setTimestamp(5, new Timestamp(fileModel.getFileAttributes().lastModifiedTime().toMillis()));
+            st.setTimestamp(6, new Timestamp(fileModel.getFileAttributes().lastAccessedTime().toMillis()));
+            st.setLong(7, fileModel.getFileAttributes().size());
+            st.setBoolean(8, fileModel.isReadAccess());
+            st.setString(9, fileModel.getChecksumValue());
+            st.setDouble(10, fileModel.getScore());
+            st.setLong(11, fileModel.getLastScanId());
 
             st.executeUpdate();
+
+            ResultSet rs = st.getGeneratedKeys();
+            if (rs.next()) {
+                int fileId = rs.getInt(1);
+                fileIndexStrategy.insertSpecificData(conn, fileId, fileModel);
+            }
 
             st.close();
 
@@ -139,7 +149,6 @@ public class PgUpdater implements IUpdater{
         }
     }
 
-    @Override
     public void updateFile(long fileId, FileModel fileModel) throws IndexUpdaterException {
         try {
             PreparedStatement st = conn.prepareStatement(
@@ -150,34 +159,34 @@ public class PgUpdater implements IUpdater{
                                 "size = ?, " +
                                 "read_access = ?, " +
                                 "checksum = ?, " +
-                                "content = ?, " +
                                 "score = ?, " +
                                 "last_scan_id = ?, " +
                                 "updated_at = DEFAULT " +
                             "WHERE id = ?"
             );
 
-            st.setTimestamp(1, new Timestamp(fileModel.fileAttributes().lastModifiedTime().toMillis()));
-            st.setTimestamp(2, new Timestamp(fileModel.fileAttributes().lastModifiedTime().toMillis()));
-            st.setTimestamp(3, new Timestamp(fileModel.fileAttributes().lastAccessedTime().toMillis()));
-            st.setLong(4, fileModel.fileAttributes().size());
-            st.setBoolean(5, fileModel.readAccess());
-            st.setString(6, fileModel.checksumValue());
-            st.setString(7, fileModel.content());
-            st.setDouble(8, fileModel.score());
-            st.setLong(9, fileModel.lastScanId());
-            st.setLong(10, fileId);
+            st.setTimestamp(1, new Timestamp(fileModel.getFileAttributes().lastModifiedTime().toMillis()));
+            st.setTimestamp(2, new Timestamp(fileModel.getFileAttributes().lastModifiedTime().toMillis()));
+            st.setTimestamp(3, new Timestamp(fileModel.getFileAttributes().lastAccessedTime().toMillis()));
+            st.setLong(4, fileModel.getFileAttributes().size());
+            st.setBoolean(5, fileModel.isReadAccess());
+            st.setString(6, fileModel.getChecksumValue());
+            st.setDouble(7, fileModel.getScore());
+            st.setLong(8, fileModel.getLastScanId());
+            st.setLong(9, fileId);
 
             st.executeUpdate();
 
             st.close();
+
+            fileIndexStrategy.updateSpecificData(conn, fileId, fileModel);
+
         } catch (SQLException e) {
             logger.log(Level.WARNING, "Update file failed!\n" + e.getMessage());
             throw new IndexUpdaterException(e.getMessage());
         }
     }
 
-    @Override
     public void updateLastScanId(long fileId, long scanId) throws IndexUpdaterException {
         try {
             PreparedStatement st = conn.prepareStatement(
@@ -198,7 +207,6 @@ public class PgUpdater implements IUpdater{
         }
     }
 
-    @Override
     public void removeUnscanned(long scanId) throws IndexUpdaterException {
         try {
             PreparedStatement st = conn.prepareStatement(
