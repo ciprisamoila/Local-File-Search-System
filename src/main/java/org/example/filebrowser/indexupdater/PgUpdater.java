@@ -116,8 +116,9 @@ public class PgUpdater{
                             "read_access," +
                             "checksum, " +
                             "score, " +
+                            "type, " +
                             "last_scan_id" +
-                            ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                            ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     Statement.RETURN_GENERATED_KEYS
             );
 
@@ -131,7 +132,8 @@ public class PgUpdater{
             st.setBoolean(8, fileModel.isReadAccess());
             st.setString(9, fileModel.getChecksumValue());
             st.setDouble(10, fileModel.getScore());
-            st.setLong(11, fileModel.getLastScanId());
+            st.setString(11, fileModel.getFileType().toString());
+            st.setLong(12, fileModel.getLastScanId());
 
             st.executeUpdate();
 

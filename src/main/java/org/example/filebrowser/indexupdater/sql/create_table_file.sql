@@ -13,6 +13,8 @@ create table file (
 
     score DOUBLE PRECISION not null,
 
+    type VARCHAR(64) not null,
+
     last_scan_id BIGINT not null,
 
     created_at TIMESTAMP DEFAULT current_timestamp,
