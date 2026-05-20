@@ -1,4 +1,4 @@
-package org.example.filebrowser.querymanager;
+package org.example.filebrowser.querymanager.tracking;
 
 import java.util.List;
 

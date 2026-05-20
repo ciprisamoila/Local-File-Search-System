@@ -1,4 +1,4 @@
-package org.example.filebrowser.querymanager;
+package org.example.filebrowser.querymanager.tracking;
 
 public interface ObservedSubject {
     void addObserver(Observer o);
