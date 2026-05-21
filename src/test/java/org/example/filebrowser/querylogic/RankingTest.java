@@ -1,28 +1,20 @@
-package com.example.filebrowser.querylogic;
+package org.example.filebrowser.querylogic;
 
 import org.example.filebrowser.model.QueryFileModel;
 import org.example.filebrowser.model.QuerySpecs;
 import org.example.filebrowser.model.RankingStrategy;
-import org.example.filebrowser.querylogic.IQuerier;
-import org.example.filebrowser.querylogic.QueryParser;
 import org.example.filebrowser.utils.exceptions.QueryManagerException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.sql.Timestamp;
-import java.text.Collator;
 import java.util.List;
-import java.util.Locale;
 
 public class RankingTest {
-    static IQuerier querier;
     static int MAX_RESULTS = 1000;
-    @BeforeAll
-    public static void setup() throws QueryManagerException {
-        querier = new QueryParser();
-    }
     @Test
     public void testAlphabeticalAscending() throws QueryManagerException {
+        IQuerier querier = new QueryParser();
         List<QueryFileModel> results = querier.getNextFilesMatching(
                 new QuerySpecs(
                         MAX_RESULTS, 0,
@@ -45,6 +37,7 @@ public class RankingTest {
     }
     @Test
     public void testAlphabeticalDescending() throws QueryManagerException {
+        IQuerier querier = new QueryParser();
         List<QueryFileModel> results = querier.getNextFilesMatching(
                 new QuerySpecs(
                         MAX_RESULTS, 0,
@@ -67,6 +60,7 @@ public class RankingTest {
     }
     @Test
     public void testDateAccessedAscending() throws QueryManagerException {
+        IQuerier querier = new QueryParser();
         List<QueryFileModel> results = querier.getNextFilesMatching(
                 new QuerySpecs(
                         MAX_RESULTS, 0,
@@ -92,6 +86,7 @@ public class RankingTest {
     }
     @Test
     public void testDateAccessedDescending() throws QueryManagerException {
+        IQuerier querier = new QueryParser();
         List<QueryFileModel> results = querier.getNextFilesMatching(
                 new QuerySpecs(
                         MAX_RESULTS, 0,

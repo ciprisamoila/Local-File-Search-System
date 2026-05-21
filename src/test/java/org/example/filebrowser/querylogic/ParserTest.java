@@ -1,4 +1,4 @@
-package com.example.filebrowser.querylogic;
+package org.example.filebrowser.querylogic;
 
 import org.example.filebrowser.querylogic.parser.Lexer;
 import org.example.filebrowser.querylogic.parser.Parser;
