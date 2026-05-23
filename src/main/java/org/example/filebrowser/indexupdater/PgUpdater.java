@@ -14,12 +14,13 @@ import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class PgUpdater{
+public class PgUpdater implements IUpdater {
     private final Logger logger = Logger.getLogger("indexupdater");
     private final Connection conn;
 
     private IFileIndexStrategy fileIndexStrategy;
 
+    @Override
     public void setFileIndexStrategy(IFileIndexStrategy fileIndexStrategy) {
         this.fileIndexStrategy = fileIndexStrategy;
     }
@@ -77,6 +78,7 @@ public class PgUpdater{
      * @return an {@code UpdateValidationData} object containing the data needed
      *          for update validation, or {@code null} if the file was not found
      */
+    @Override
     public UpdateValidationData searchByPath(String path) throws IndexUpdaterException {
         try {
             PreparedStatement st = conn.prepareStatement(
@@ -102,6 +104,7 @@ public class PgUpdater{
         }
     }
 
+    @Override
     public void insert(FileModel fileModel) throws IndexUpdaterException {
         try {
             PreparedStatement st = conn.prepareStatement(
@@ -151,6 +154,7 @@ public class PgUpdater{
         }
     }
 
+    @Override
     public void updateFile(long fileId, FileModel fileModel) throws IndexUpdaterException {
         try {
             PreparedStatement st = conn.prepareStatement(
@@ -189,6 +193,7 @@ public class PgUpdater{
         }
     }
 
+    @Override
     public void updateLastScanId(long fileId, long scanId) throws IndexUpdaterException {
         try {
             PreparedStatement st = conn.prepareStatement(
@@ -209,6 +214,7 @@ public class PgUpdater{
         }
     }
 
+    @Override
     public void removeUnscanned(long scanId) throws IndexUpdaterException {
         try {
             PreparedStatement st = conn.prepareStatement(

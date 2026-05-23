@@ -7,14 +7,20 @@ import org.example.filebrowser.model.index.FileModel;
 import org.example.filebrowser.model.index.ImageFileModel;
 import org.example.filebrowser.model.index.TextFileModel;
 import org.example.filebrowser.model.index.UpdateValidationData;
+import org.example.filebrowser.model.queue.*;
+import org.example.filebrowser.model.queue.payloads.*;
 import org.example.filebrowser.utils.exceptions.IndexUpdaterException;
 
-public class IndexEntryPoint implements IUpdater {
+import java.util.concurrent.Callable;
 
-    private final PgUpdater pgUpdater;
+public class IndexEntryPoint implements Callable<Void> {
 
-    public IndexEntryPoint() throws IndexUpdaterException {
+    private final IUpdater pgUpdater;
+    private final ConcurrentQueue<QueueMessage> queue;
+
+    public IndexEntryPoint(ConcurrentQueue<QueueMessage> queue) throws IndexUpdaterException {
         this.pgUpdater = new PgUpdater();
+        this.queue = queue;
     }
 
     private IFileIndexStrategy getIndexStrategy(FileModel fileModel) throws IndexUpdaterException {
@@ -25,30 +31,81 @@ public class IndexEntryPoint implements IUpdater {
         };
     }
 
-    @Override
-    public UpdateValidationData searchByPath(String path) throws IndexUpdaterException {
-        return pgUpdater.searchByPath(path);
+    private void processMessage(QueueMessage queueMessage) throws IndexUpdaterException {
+        switch (queueMessage.type()) {
+            case SEARCH -> processSearch(queueMessage);
+            case INSERT -> processInsert(queueMessage);
+            case UPDATE_FILE -> processUpdateFile(queueMessage);
+            case UPDATE_ID -> processUpdateLastScanId(queueMessage);
+            case REMOVE_UNSCANNED -> processRemoveUnscanned(queueMessage);
+        }
     }
 
     @Override
-    public void insert(FileModel fileModel) throws IndexUpdaterException {
+    public Void call() throws IndexUpdaterException {
+        while (true) {
+            try {
+                QueueMessage queueMessage = queue.poll();
+
+                processMessage(queueMessage);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return null;
+            }
+        }
+    }
+
+    private void processSearch(QueueMessage queueMessage) throws IndexUpdaterException {
+        if (!(queueMessage.payload() instanceof SearchPayload(String path))) {
+            throw new IndexUpdaterException("Wrong payload type");
+        }
+
+        System.out.println("[CONSUMER] Search for path " + path);
+
+        UpdateValidationData validationData = pgUpdater.searchByPath(path);
+
+        queueMessage.future().complete(validationData);
+    }
+
+    private void processInsert(QueueMessage queueMessage) throws IndexUpdaterException {
+        if (!(queueMessage.payload() instanceof InsertPayload(FileModel fileModel))) {
+            throw new IndexUpdaterException("Wrong payload type");
+        }
+
+        System.out.println("[CONSUMER] Insert file " + fileModel.getFileAttributes().path());
+
         pgUpdater.setFileIndexStrategy(getIndexStrategy(fileModel));
         pgUpdater.insert(fileModel);
     }
 
-    @Override
-    public void updateFile(long fileId, FileModel fileModel) throws IndexUpdaterException {
+    private void processUpdateFile(QueueMessage queueMessage) throws IndexUpdaterException {
+        if (!(queueMessage.payload() instanceof UpdateFilePayload(long fileId, FileModel fileModel))) {
+            throw new IndexUpdaterException("Wrong payload type");
+        }
+
+        System.out.println("[PRODUCER] Update file " + fileModel.getFileAttributes().path());
+
         pgUpdater.setFileIndexStrategy(getIndexStrategy(fileModel));
         pgUpdater.updateFile(fileId, fileModel);
     }
 
-    @Override
-    public void updateLastScanId(long fileId, long scanId) throws IndexUpdaterException {
+    private void processUpdateLastScanId(QueueMessage queueMessage) throws IndexUpdaterException {
+        if (!(queueMessage.payload() instanceof UpdateIdPayload(long fileId, long scanId))) {
+            throw new IndexUpdaterException("Wrong payload type");
+        }
+
+        System.out.println("[CONSUMER] Update just scanId for file " + fileId);
+
         pgUpdater.updateLastScanId(fileId, scanId);
     }
 
-    @Override
-    public void removeUnscanned(long scanId) throws IndexUpdaterException {
+    private void processRemoveUnscanned(QueueMessage queueMessage) throws IndexUpdaterException {
+        if (!(queueMessage.payload() instanceof RemoveUnscannedPayload(long scanId))) {
+            throw new IndexUpdaterException("Wrong payload type");
+        }
+
+        System.out.println("[CONSUMER] Remove files with different scan id " + scanId);
+
         pgUpdater.removeUnscanned(scanId);
     }
 }
