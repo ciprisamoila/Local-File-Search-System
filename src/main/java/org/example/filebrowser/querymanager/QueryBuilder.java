@@ -1,22 +1,36 @@
 package org.example.filebrowser.querymanager;
 
 import org.example.filebrowser.model.ImageColor;
+import org.example.filebrowser.model.QueryInducedType;
 import org.example.filebrowser.querylogic.parser.expression.*;
 import org.example.filebrowser.querymanager.decorator.IQueryBuilder;
 import org.example.filebrowser.utils.exceptions.ParserException;
 
 import java.sql.Date;
 import java.sql.Timestamp;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
+
+import static java.lang.Math.*;
 
 public class QueryBuilder {
 
     private final IQueryBuilder contentQueryBuilder;
+    private final Map<QueryInducedType, Float> typeScores;
 
     public QueryBuilder(IQueryBuilder contentQueryBuilder) {
         this.contentQueryBuilder = contentQueryBuilder;
+        typeScores = new HashMap<>();
+        clearTypeScores();
+    }
+
+    private void clearTypeScores() {
+        for (QueryInducedType queryInducedType : QueryInducedType.values()) {
+            typeScores.put(queryInducedType, 0f);
+        }
+    }
+
+    private void incrementType(QueryInducedType queryInducedType, ImpactOnType impactOnType) {
+        typeScores.put(queryInducedType, min(typeScores.get(queryInducedType) + impactOnType.getValue(), 1.0f));
     }
 
     private String exprToSQL(OrExpr orExpr) {
@@ -38,6 +52,11 @@ public class QueryBuilder {
         return "name LIKE '%" + command + "%'";
     }
     private String parseExtensionCommand(String command) {
+
+        if (command.equals("txt")) {
+            incrementType(QueryInducedType.TXT, ImpactOnType.HIGH);
+        }
+
         return "extension = '" + command + "'";
     }
     private String parsePathCommand(String command) {
@@ -151,12 +170,21 @@ public class QueryBuilder {
         } else if (command.endsWith("\"")) {
             throw new ParserException("Wrong quotations");
         }
+
+        if (command.contains("image")) {
+            incrementType(QueryInducedType.IMAGE, ImpactOnType.MEDIUM);
+        } else if (command.contains("log")) {
+            incrementType(QueryInducedType.LOGS, ImpactOnType.MEDIUM);
+        }
+
         // Query Decorator applies only on content commands
         command = contentQueryBuilder.buildQuery(command);
         return "ts @@ to_tsquery('simple', '" + command + "')";
     }
 
     private String parseColorCommand(String command) {
+        incrementType(QueryInducedType.IMAGE, ImpactOnType.HIGH);
+
         command = command.toUpperCase();
         Set<String> availableColors = new HashSet<>();
         Arrays.stream(ImageColor.values()).forEach(color -> availableColors.add(color.toString()));
@@ -189,12 +217,37 @@ public class QueryBuilder {
     }
 
     public String exprToSQL(Expr expr) {
+        clearTypeScores();
         return switch (expr) {
             case OrExpr orExpr -> exprToSQL(orExpr);
             case AndExpr andExpr -> exprToSQL(andExpr);
             case NotExpr notExpr -> exprToSQL(notExpr);
             default -> exprToSQL((CommandExpr) expr);
         };
+    }
+
+    public QueryInducedType getQueryInducedType() {
+        // get biggest two values; if they are two close, return OTHER, otherwise, return max
+        Map.Entry<QueryInducedType, Float> maxEntry = null;
+        Map.Entry<QueryInducedType, Float> secondMaxEntry = null;
+        for (Map.Entry<QueryInducedType, Float> entry : typeScores.entrySet()) {
+            if (maxEntry == null || entry.getValue() > maxEntry.getValue()) {
+                secondMaxEntry = maxEntry;
+                maxEntry = entry;
+            }
+            else if (secondMaxEntry == null || entry.getValue() > secondMaxEntry.getValue()) {
+                secondMaxEntry = entry;
+            }
+        }
+
+        assert secondMaxEntry != null;
+
+        float TYPE_SCORE_THRESHOLD = 0.2f;
+        if (abs(secondMaxEntry.getValue() - maxEntry.getValue()) > TYPE_SCORE_THRESHOLD) {
+            return maxEntry.getKey();
+        }
+
+        return QueryInducedType.OTHER;
     }
 
     public static void main(String[] args) {
@@ -209,5 +262,19 @@ public class QueryBuilder {
         String s = "con    tent";
         s = s.replaceAll("\\s+", " ");
         System.out.println(s);
+    }
+}
+
+enum ImpactOnType {
+    NONE(0f), LOW(0.1f), MEDIUM(0.3f), HIGH(0.5f);
+
+    private final float impact;
+
+    ImpactOnType(float impact) {
+        this.impact = impact;
+    }
+
+    float getValue() {
+        return impact;
     }
 }
