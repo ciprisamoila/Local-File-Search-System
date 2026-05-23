@@ -50,7 +50,12 @@
     </top>
 
     <center>
-        <ListView fx:id="resultsList" style="-fx-background-insets: 0; -fx-padding: 8 0 0 0;"/>
+        <VBox spacing="8.0" style="-fx-padding: 10 0 0 0;">
+            <HBox fx:id="widgetButtonBar" spacing="8.0" visible="false" managed="false">
+                <Label text="Widgets:" style="-fx-font-weight: bold; -fx-text-fill: #1e293b;"/>
+            </HBox>
+            <ListView fx:id="resultsList" style="-fx-background-insets: 0; -fx-padding: 8 0 0 0;"/>
+        </VBox>
     </center>
 
     <bottom>

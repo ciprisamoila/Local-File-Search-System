@@ -12,6 +12,7 @@ import javafx.scene.control.ListCell;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
@@ -77,6 +78,9 @@ public class SearchController {
     @FXML
     private ListView<QueryFileModel> resultsList;
 
+    @FXML
+    private HBox widgetButtonBar;
+
     private final ExecutorService searchExecutor = Executors.newSingleThreadExecutor(runnable -> {
         Thread t = new Thread(runnable, "query-worker");
         t.setDaemon(true);
@@ -104,7 +108,7 @@ public class SearchController {
     private boolean crawlConfigLoaded;
     private CrawlConfig initialConfig;
     private final ContextMenu suggestionMenu = new ContextMenu();
-    private final WidgetFactory widgetFactory = new WidgetFactory();
+    private WidgetFactory widgetFactory;
 
     @FXML
     private void initialize() {
@@ -119,6 +123,8 @@ public class SearchController {
         crawlButton.setDisable(true);
         resultsList.setPlaceholder(new Label("No results yet."));
         resultsList.setCellFactory(_ -> new QueryResultCell());
+        widgetButtonBar.setVisible(false);
+        widgetButtonBar.setManaged(false);
         queryInput.setOnAction(_ -> onSearchClicked());
         queryInput.textProperty().addListener((_, _, _) -> refreshSuggestions());
         queryInput.focusedProperty().addListener((_, _, focused) -> {
@@ -143,6 +149,10 @@ public class SearchController {
         } catch (ConfigException e) {
             crawlStatusLabel.setText(e.getMessage());
         }
+    }
+
+    public void setWidgetFactory(WidgetFactory widgetFactory) {
+        this.widgetFactory = widgetFactory;
     }
 
     public void setQuerier(IQuerier querier) {
@@ -302,6 +312,7 @@ public class SearchController {
         if (query.isEmpty()) {
             statusLabel.setText(fromButton ? "Please enter a search query." : "Type to search.");
             resultsList.getItems().clear();
+            updateWidgetButtons(List.of());
             searchButton.setDisable(false);
             return;
         }
@@ -342,7 +353,8 @@ public class SearchController {
             statusLabel.setText("Found " + resultFiles.size() + " result(s).");
             searchButton.setDisable(false);
 
-            widgetFactory.getWidgets(result);
+            List<Button> widgetButtons = widgetFactory == null ? List.of() : widgetFactory.getWidgets(result);
+            updateWidgetButtons(widgetButtons);
         });
 
         task.setOnFailed(_ -> {
@@ -353,10 +365,25 @@ public class SearchController {
             Throwable ex = task.getException();
             String errorMessage = ex == null ? "Unknown error." : ex.getMessage();
             statusLabel.setText("Search failed: " + errorMessage);
+            updateWidgetButtons(List.of());
             searchButton.setDisable(false);
         });
 
         runningSearch = searchExecutor.submit(task);
+    }
+
+    private void updateWidgetButtons(List<Button> buttons) {
+        if (widgetButtonBar.getChildren().size() > 1) {
+            widgetButtonBar.getChildren().remove(1, widgetButtonBar.getChildren().size());
+        }
+
+        if (buttons != null) {
+            widgetButtonBar.getChildren().addAll(buttons);
+        }
+
+        boolean hasButtons = widgetButtonBar.getChildren().size() > 1;
+        widgetButtonBar.setVisible(hasButtons);
+        widgetButtonBar.setManaged(hasButtons);
     }
 
     private void refreshSuggestions() {

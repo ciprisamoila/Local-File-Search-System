@@ -8,10 +8,15 @@ import org.example.filebrowser.crawler.Crawling;
 import org.example.filebrowser.crawler.FileCrawlerManager;
 import org.example.filebrowser.querylogic.QueryParser;
 import org.example.filebrowser.ui.SearchController;
+import org.example.filebrowser.ui.WidgetFactory;
+import org.example.filebrowser.ui.widgets.AnalyzeLogsWidget;
+import org.example.filebrowser.ui.widgets.SaveTextWidget;
+import org.example.filebrowser.ui.widgets.ShowGalleryWidget;
 import org.example.filebrowser.utils.exceptions.QueryManagerException;
 import org.example.filebrowser.utils.exceptions.TableDoesNotExist;
 
 import java.io.IOException;
+import java.util.List;
 
 public class HelloApplication extends Application {
     private SearchController controller;
@@ -24,6 +29,10 @@ public class HelloApplication extends Application {
         controller = fxmlLoader.getController();
         Crawling crawler = new FileCrawlerManager();
         controller.setCrawler(crawler);
+
+        controller.setWidgetFactory(new WidgetFactory(
+                List.of(new ShowGalleryWidget(), new AnalyzeLogsWidget(), new SaveTextWidget())
+        ));
 
         try {
             try {
