@@ -1,0 +1,5 @@
+#!/bin/sh
+
+# run maven tests
+echo "Running pre-commit checks..."
+./mvnw clean verify
