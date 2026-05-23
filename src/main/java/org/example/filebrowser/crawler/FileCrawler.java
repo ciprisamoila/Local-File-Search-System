@@ -110,7 +110,8 @@ public class FileCrawler {
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             } catch (ExecutionException e) {
-                throw new CrawlerException(e.getMessage());
+                Throwable cause = e.getCause();
+                throw new CrawlerException(cause.getMessage());
             }
         }
 
