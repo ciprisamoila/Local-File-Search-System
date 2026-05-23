@@ -44,7 +44,6 @@ public class FileCrawler {
     private void startProducer(File file) {
         Future<?> future = threadPool.submit(new FileProcessor(
                 queue,
-                fileInspector,
                 fileChecker,
                 config,
                 file,

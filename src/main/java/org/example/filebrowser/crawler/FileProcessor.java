@@ -108,11 +108,11 @@ public class FileProcessor implements Callable<Void> {
         }
     }
 
-    public FileProcessor(ConcurrentQueue<QueueMessage> queue, FileInspector fileInspector, FileChecker fileChecker, CrawlConfig config, File file, long scanId,
+    public FileProcessor(ConcurrentQueue<QueueMessage> queue, FileChecker fileChecker, CrawlConfig config, File file, long scanId,
                          AtomicInteger nrFilesToInsert, AtomicInteger nrFilesToUpdate, AtomicInteger nrFilesInserted, AtomicInteger nrFilesUpdated) {
         this.queue = queue;
 
-        this.fileInspector = fileInspector;
+        this.fileInspector = new FileInspector();
         this.fileChecker = fileChecker;
         this.file = file;
         this.config = config;
