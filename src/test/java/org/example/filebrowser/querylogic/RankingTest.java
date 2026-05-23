@@ -23,7 +23,7 @@ public class RankingTest {
                 ),
                 "NOT size:-1", // gets all results
                 true
-        );
+        ).queryFileModels();
 
         // now we check if indeed the results are sorted accordingly
         boolean failed = false;
@@ -46,7 +46,7 @@ public class RankingTest {
                 ),
                 "NOT size:-1", // gets all results
                 true
-        );
+        ).queryFileModels();
 
         // now we check if indeed the results are sorted accordingly
         boolean failed = false;
@@ -69,7 +69,7 @@ public class RankingTest {
                 ),
                 "NOT size:-1", // gets all results
                 true
-        );
+        ).queryFileModels();
 
         // now we check if indeed the results are sorted accordingly
         boolean failed = false;
@@ -95,7 +95,7 @@ public class RankingTest {
                 ),
                 "NOT size:-1", // gets all results
                 true
-        );
+        ).queryFileModels();
 
         // now we check if indeed the results are sorted accordingly
         boolean failed = false;
