@@ -1,6 +1,7 @@
 package org.example.filebrowser.querymanager;
 
 import org.example.filebrowser.model.QueryFileModel;
+import org.example.filebrowser.model.QueryResponse;
 import org.example.filebrowser.model.QuerySpecs;
 import org.example.filebrowser.model.RankingStrategy;
 import org.example.filebrowser.model.index.FileType;
@@ -36,6 +37,7 @@ public class PgQuerier implements IDatabaseQuerier, ObservedSubject {
     Logger logger = Logger.getLogger("querymanager");
     Connection conn;
     private final List<Observer> observers = new ArrayList<>();
+    private final QueryBuilder queryBuilder = queryBuilderFactory();
 
     @Override
     public void addObserver(Observer o) {
@@ -163,7 +165,6 @@ FROM   file
 
         // WHERE clause
         String whereClause;
-        QueryBuilder queryBuilder = queryBuilderFactory();
         try {
             whereClause = queryBuilder.exprToSQL(ast);
         } catch (ParserException e) {
@@ -194,7 +195,7 @@ FROM   file
     }
 
     @Override
-    public List<QueryFileModel> getNextFilesMatching(QuerySpecs querySpecs, String originalQuery, Expr ast, boolean isUnderTest) throws QueryManagerException {
+    public QueryResponse getNextFilesMatching(QuerySpecs querySpecs, String originalQuery, Expr ast, boolean isUnderTest) throws QueryManagerException {
         try {
             PreparedStatement preparedStatement = conn.prepareStatement(buildFullQuery(ast, querySpecs));
 
@@ -217,6 +218,7 @@ FROM   file
                         resultSet.getBoolean("read_access"),
                         resultSet.getString("headline"),
                         FileType.valueOf(resultSet.getString("type"))
+
                 ));
                 searchFileIds.add(resultSet.getLong("id"));
             }
@@ -228,7 +230,7 @@ FROM   file
                 ));
             }
 
-            return fileList;
+            return new QueryResponse(queryBuilder.getQueryInducedType(), fileList);
         } catch (SQLException e) {
             logger.log(Level.WARNING, "Query failed!\n" + e.getMessage());
             throw new QueryManagerException(e.getMessage());

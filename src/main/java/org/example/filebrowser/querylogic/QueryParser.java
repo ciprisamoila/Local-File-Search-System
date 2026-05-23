@@ -1,6 +1,7 @@
 package org.example.filebrowser.querylogic;
 
 import org.example.filebrowser.model.QueryFileModel;
+import org.example.filebrowser.model.QueryResponse;
 import org.example.filebrowser.model.QuerySpecs;
 import org.example.filebrowser.querylogic.parser.Lexer;
 import org.example.filebrowser.querylogic.parser.Parser;
@@ -19,7 +20,7 @@ public class QueryParser implements IQuerier {
     }
 
     @Override
-    public List<QueryFileModel> getNextFilesMatching(QuerySpecs querySpecs, String query, boolean isUnderTest) throws QueryManagerException {
+    public QueryResponse getNextFilesMatching(QuerySpecs querySpecs, String query, boolean isUnderTest) throws QueryManagerException {
         try {
             // sanitize query by eliminating "'"
             Parser parser = new Parser(new Lexer(query.replace("'", "")));

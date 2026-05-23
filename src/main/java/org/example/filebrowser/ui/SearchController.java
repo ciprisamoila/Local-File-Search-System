@@ -17,6 +17,7 @@ import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 import org.example.filebrowser.crawler.Crawling;
 import org.example.filebrowser.model.QueryFileModel;
+import org.example.filebrowser.model.QueryResponse;
 import org.example.filebrowser.model.QuerySpecs;
 import org.example.filebrowser.model.RankingStrategy;
 import org.example.filebrowser.querylogic.IQuerier;
@@ -103,6 +104,7 @@ public class SearchController {
     private boolean crawlConfigLoaded;
     private CrawlConfig initialConfig;
     private final ContextMenu suggestionMenu = new ContextMenu();
+    private final WidgetFactory widgetFactory = new WidgetFactory();
 
     @FXML
     private void initialize() {
@@ -312,9 +314,9 @@ public class SearchController {
         searchButton.setDisable(true);
         statusLabel.setText("Searching...");
 
-        Task<List<QueryFileModel>> task = new Task<>() {
+        Task<QueryResponse> task = new Task<>() {
             @Override
-            protected List<QueryFileModel> call() throws QueryManagerException {
+            protected QueryResponse call() throws QueryManagerException {
                 RankingStrategy rankingStrategy = rankingStrategyChoice.getValue();
                 if (rankingStrategy == null) {
                     rankingStrategy = RankingStrategy.RELEVANCE;
@@ -334,10 +336,13 @@ public class SearchController {
                 return;
             }
 
-            List<QueryFileModel> results = task.getValue();
-            resultsList.getItems().setAll(results);
-            statusLabel.setText("Found " + results.size() + " result(s).");
+            QueryResponse result = task.getValue();
+            List<QueryFileModel> resultFiles = result.queryFileModels();
+            resultsList.getItems().setAll(resultFiles);
+            statusLabel.setText("Found " + resultFiles.size() + " result(s).");
             searchButton.setDisable(false);
+
+            widgetFactory.getWidgets(result);
         });
 
         task.setOnFailed(_ -> {
