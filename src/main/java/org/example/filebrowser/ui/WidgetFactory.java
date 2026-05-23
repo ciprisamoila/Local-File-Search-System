@@ -29,7 +29,7 @@ public class WidgetFactory {
         float SCORE_THRESHOLD = 0.5f;
         for (IWidget widget : possibleWidgets) {
             if (widget.widgetScore(queryResponse) >= SCORE_THRESHOLD) {
-                buttons.add(widget.getWidget());
+                buttons.add(widget.getWidget(queryResponse));
             }
         }
 
